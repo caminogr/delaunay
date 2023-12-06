@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -framework OpenGL -framework GLUT -lGLEW -lglfw
+CFLAGS = -framework OpenGL -framework GLUT -lGLEW -lglfw -std=c++17
 TARGET = out
 SRC = main.cpp
 

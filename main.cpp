@@ -1,7 +1,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <vector>
 #include <cstdlib>  // For rand() and srand()
 #include <ctime>    // For time()
+
+
+struct Point {
+    float x, y;
+};
 
 int main() {
     // Initialize GLFW
@@ -27,11 +33,22 @@ int main() {
     }
 
     // Set viewport
-    glViewport(0, 0, 800, 600);
+    int width, height;
+    // retina display 対応
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height);
 
     // Seed for random number generation
     srand(static_cast<unsigned int>(time(nullptr)));
+    std::vector<Point> points;
+    for (int i = 0; i < 100; ++i) {
+      points.push_back({
+        static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1, 
+        static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1
+      });
+    }
 
+    glPointSize(8.0f);
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         // Render here
@@ -39,10 +56,8 @@ int main() {
 
         // Draw random points
         glBegin(GL_POINTS);
-        for (int i = 0; i < 100; ++i) {
-            float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-            float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-            glVertex2f(x * 2 - 1, y * 2 - 1); // Map to [-1, 1] range
+        for (const auto& point : points) {
+          glVertex2f(point.x, point.y);
         }
         glEnd();
 
