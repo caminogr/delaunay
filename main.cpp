@@ -101,7 +101,7 @@ bool is_point_in_triangle(
 }
 
 /* 追加する点を含んでいるの三角形を取得 */
-std::vector<Triangle> get_triangle_include_point(
+Triangle get_triangle_include_point(
   const Point& point,
   const std::vector<Triangle>& triangles
 ) {
@@ -109,19 +109,17 @@ std::vector<Triangle> get_triangle_include_point(
   int index = triangles.size() - 1;
   while (index >= 0) {
     /* for (const Triangle& triangle : triangles) { */
-      // TODO: 選択した三角形に点が含まれていなかったときに次の三角形を見つけるアルゴリズム
       if (is_point_in_triangle(point, triangles[index])) {
-        std::cout << "is_point_in_triangle: true" << std::endl;
-        /* return triangle; */
+        return triangles[index];
       } else {
+        // TODO: 選択した三角形の見つけ方の最適化
         std::cout << "is_point_in_triangle: false" << std::endl;
-
     }
 
     index--;
   }
 
-  return triangles;
+  return triangles[0];
 }
 
 int main() {
@@ -170,7 +168,7 @@ int main() {
 
     // vectorの中身をすべて確認
     std::vector<Edge> edges;
-    std::vector<Triangle> triagnles = {outermost_triangle};
+    std::vector<Triangle> triangles = {outermost_triangle};
 
     // pointsを順番に処理していく
     /* for (int i = 0; i < points.size(); ++i) { */
@@ -196,7 +194,21 @@ int main() {
     {
       Point point = points.at(i);
 
-      auto outer_triangle = get_triangle_include_point(point, triagnles);
+      auto outer_triangle = get_triangle_include_point(point, triangles);
+      Edge edge1 = Edge(point, outer_triangle.a);
+      Edge edge2 = Edge(point, outer_triangle.b);
+      Edge edge3 = Edge(point, outer_triangle.c);
+      edges.push_back(edge1);
+      edges.push_back(edge2);
+      edges.push_back(edge3);
+
+      Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.end);
+      Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.end);
+      Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.end);
+      triangles.push_back(triangle1);
+      triangles.push_back(triangle2);
+      triangles.push_back(triangle3);
+
       /* 外接に含まれている三角形のcheckと削除 */
       /* 三角形の作成 */
       /* ドロネー条件のチェックとフリップ操作 */
@@ -221,6 +233,14 @@ int main() {
             glVertex2f(edge.end.x, edge.end.y);
           }
         glEnd();
+
+        /* glBegin(GL_LINES); */
+        /*   for (const Triangle& triangle : triangles) { */
+        /*     glVertex2f(triangle.a.x, triangle.a.y); */
+        /*     glVertex2f(triangle.b.x, triangle.b.y); */
+        /*     glVertex2f(triangle.c.x, triangle.c.y); */
+        /*   } */
+        /* glEnd(); */
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
