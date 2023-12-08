@@ -36,11 +36,13 @@ struct Triangle {
   }
 
   Edge getEdgeCA() const {
-   return Edge(c, a);
-}
+    return Edge(c, a);
+  }
 };
 
-
+float cross_product(const Point& A, const Point& B) {
+  return A.x * B.y - A.y * B.x;
+}
 
 Triangle get_triangle_including_window() {
   Point center(0.0f, 0.0f);
@@ -74,8 +76,52 @@ Triangle get_triangle_including_window() {
   return outermost_triangle;
 }
 
-Triangle get_triangle_include_point(const Point& point) {
+bool is_same_sign(float a, float b, float c) {
+  return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
+}
 
+bool is_point_in_triangle(
+  const Point& point,
+  const Triangle& triangle
+) {
+  float cross1 = cross_product(
+      {triangle.a.x - triangle.b.x, triangle.a.y - triangle.b.y}, 
+      {point.x - triangle.b.x, point.y - triangle.b.y}
+    );
+  float cross2 = cross_product(
+      {triangle.c.x - triangle.a.x, triangle.c.y - triangle.a.y},
+      {point.x - triangle.a.x, point.y - triangle.a.y}
+    );
+  float cross3 = cross_product(
+      {triangle.b.x - triangle.c.x, triangle.b.y - triangle.c.y},
+      {point.x - triangle.c.x, point.y - triangle.c.y}
+  );
+  
+  return is_same_sign(cross1, cross2, cross3);
+}
+
+/* 追加する点を含んでいるの三角形を取得 */
+std::vector<Triangle> get_triangle_include_point(
+  const Point& point,
+  const std::vector<Triangle>& triangles
+) {
+  // 後ろから走査していく
+  int index = triangles.size() - 1;
+  while (index >= 0) {
+    /* for (const Triangle& triangle : triangles) { */
+      // TODO: 選択した三角形に点が含まれていなかったときに次の三角形を見つけるアルゴリズム
+      if (is_point_in_triangle(point, triangles[index])) {
+        std::cout << "is_point_in_triangle: true" << std::endl;
+        /* return triangle; */
+      } else {
+        std::cout << "is_point_in_triangle: false" << std::endl;
+
+    }
+
+    index--;
+  }
+
+  return triangles;
 }
 
 int main() {
@@ -124,6 +170,7 @@ int main() {
 
     // vectorの中身をすべて確認
     std::vector<Edge> edges;
+    std::vector<Triangle> triagnles = {outermost_triangle};
 
     // pointsを順番に処理していく
     /* for (int i = 0; i < points.size(); ++i) { */
@@ -149,8 +196,7 @@ int main() {
     {
       Point point = points.at(i);
 
-      /* 追加する点を含んでいるの三角形を取得 */
-      /* Triangle outer_triangle = triangle_including_point */
+      auto outer_triangle = get_triangle_include_point(point, triagnles);
       /* 外接に含まれている三角形のcheckと削除 */
       /* 三角形の作成 */
       /* ドロネー条件のチェックとフリップ操作 */
