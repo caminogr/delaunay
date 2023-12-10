@@ -49,7 +49,7 @@ Triangle get_triangle_including_window() {
 
   // TMP
   /* float window_diagonal = std::sqrt(std::pow(800/2, 2) + std::pow(600/2, 2)); */
-  float window_diagonal = std::sqrt(std::pow(800, 2) + std::pow(600, 2));
+  float window_diagonal = std::sqrt(std::pow(800, 2) + std::pow(800, 2));
   std::cout << "window_diagonal" << std::endl;
   std::cout << window_diagonal << std::endl;
 
@@ -61,15 +61,15 @@ Triangle get_triangle_including_window() {
   // windowに外接する円外接する三角形を構成する頂点の座標
   Point A = Point(
       center.x,
-      center.x + 2 * circumscribed_circle_r / (600 * 1/2)
+      center.x + 2 * circumscribed_circle_r / (800 * 1/2)
     );
   Point B = Point(
       center.x - std::sqrt(3) * circumscribed_circle_r / (800 * 1/2),
-      center.x - circumscribed_circle_r / (600 * 1/2)
+      center.x - circumscribed_circle_r / (800 * 1/2)
     );
   Point C = Point(
       center.x + std::sqrt(3) * circumscribed_circle_r / (800 * 1/2),
-      center.x - circumscribed_circle_r / (600 * 1/2)
+      center.x - circumscribed_circle_r / (800 * 1/2)
     );
     
   Triangle outermost_triangle = Triangle(A, B, C);
@@ -129,7 +129,7 @@ int main() {
     }
 
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Random Points", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 800, "Random Points", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return -1;
