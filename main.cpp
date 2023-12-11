@@ -57,12 +57,15 @@ float cross_product(const Point& A, const Point& B) {
   return A.x * B.y - A.y * B.x;
 }
 
+const float WINDOW_WIDTH = 800;
+const float WINDOW_HEIGHT = 800;
+
 Triangle get_triangle_including_window() {
   Point center(0.0f, 0.0f);
 
   // TMP
   /* float window_diagonal = std::sqrt(std::pow(800/2, 2) + std::pow(600/2, 2)); */
-  float window_diagonal = std::sqrt(std::pow(800, 2) + std::pow(800, 2));
+  float window_diagonal = std::sqrt(std::pow(WINDOW_WIDTH, 2) + std::pow(WINDOW_HEIGHT, 2));
   std::cout << "window_diagonal" << std::endl;
   std::cout << window_diagonal << std::endl;
 
@@ -74,15 +77,15 @@ Triangle get_triangle_including_window() {
   // windowに外接する円外接する三角形を構成する頂点の座標
   Point A = Point(
       center.x,
-      center.x + 2 * circumscribed_circle_r / (800 * 1/2)
+      center.x + 2 * circumscribed_circle_r / (WINDOW_HEIGHT * 1/2)
     );
   Point B = Point(
-      center.x - std::sqrt(3) * circumscribed_circle_r / (800 * 1/2),
-      center.x - circumscribed_circle_r / (800 * 1/2)
+      center.x - std::sqrt(3) * circumscribed_circle_r / (WINDOW_WIDTH * 1/2),
+      center.x - circumscribed_circle_r / (WINDOW_HEIGHT * 1/2)
     );
   Point C = Point(
-      center.x + std::sqrt(3) * circumscribed_circle_r / (800 * 1/2),
-      center.x - circumscribed_circle_r / (800 * 1/2)
+      center.x + std::sqrt(3) * circumscribed_circle_r / (WINDOW_WIDTH * 1/2),
+      center.x - circumscribed_circle_r / (WINDOW_HEIGHT * 1/2)
     );
     
   Triangle outermost_triangle = Triangle(A, B, C);
@@ -295,7 +298,7 @@ int main() {
     }
 
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(800, 800, "Random Points", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Random Points", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return -1;
