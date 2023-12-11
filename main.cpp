@@ -5,6 +5,12 @@
 #include <ctime>    // For time()
 #include <iostream>
 
+/* {0.5f, 0.5f}, */
+/* {.3f, .3f}, */
+/* {-0.2f, .3f}, */
+/* {.7f, -.6f}, */
+/* {-.3f, -.3f} */
+
 
 struct Point {
   float x, y;
@@ -228,17 +234,34 @@ void legalize_edge(
     // 違反点を含んでいる三角形を取得
     // 違反している三角形を取得
     std::vector<int> required_flip_triangles = get_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles);
+
     std::cout << "<= 1であることを期待したコード" << std::endl;
+    std::cout << "primitive_triangles.size(): " << primitive_triangles.size() << std::endl;
     std::cout << "required_flip_triangles.size(): " << required_flip_triangles.size() << std::endl;
     if (required_flip_triangles.size() <= 0) {
+      std::cout << "return" << std::endl;
       return;
     }
+    std::cout << "called" << std::endl;
 
     //TODO: target_triangleをprimitiveから削除
+    // 探索のコストがもったいないので primitiveなものだけpushしたい
+    int target_triangle_index;
+    for (int i = 0; i < primitive_triangles.size(); i++) {
+      if (primitive_triangles[i].a.x == target_triangle.a.x && primitive_triangles[i].a.y == target_triangle.a.y &&
+          primitive_triangles[i].b.x == target_triangle.b.x && primitive_triangles[i].b.y == target_triangle.b.y &&
+          primitive_triangles[i].c.x == target_triangle.c.x && primitive_triangles[i].c.y == target_triangle.c.y) {
+        target_triangle_index = i;
+        break;
+      }
+      target_triangle_index = -1;
+    }
+    primitive_triangles.erase(primitive_triangles.begin() + target_triangle_index);
 
 
   // TODO: 「required_flip_triangles.size() <= 1が正しければfor分の記述を消す
-    for (int i = required_flip_triangles.size() - 1; 0 <= i; i--) {
+    /* for (int i = required_flip_triangles.size() - 1; 0 <= i; i--) { */
+    for (int i = 0; i < required_flip_triangles.size(); i++) {
       Triangle required_flip_triangle = primitive_triangles[required_flip_triangles[i]];
       // delayney条件を違反するedgeを取得
       // added_point以外の2点が作るline
@@ -253,14 +276,15 @@ void legalize_edge(
       Triangle new_triangle2 = Triangle(added_point, unshared_point, illegal_edge.end);
       // new_triangle1をprimitiveに追加
       // new_triangle2をprimitiveに追加
+
       primitive_triangles.push_back(new_triangle1);
-      primitive_triangles.push_back(new_triangle2);
 
       // flipした三角形の周りの三角形を再帰的にチェック
       // new triangle 1
       legalize_edge(new_triangle1, primitive_triangles, added_point);
       // new triangle 2
-      legalize_edge(new_triangle2, primitive_triangles, added_point);
+      /* primitive_triangles.push_back(new_triangle2); */
+      /* legalize_edge(new_triangle2, primitive_triangles, added_point); */
   }
 }
 
@@ -296,7 +320,7 @@ int main() {
     // Seed for random number generation
     srand(static_cast<unsigned int>(time(nullptr)));
     std::vector<Point> points;
-    /* for (int i = 0; i < 2; ++i) { */
+    /* for (int i = 0; i < 5; ++i) { */
     /*   points.push_back({ */
     /*     static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1, */ 
     /*     static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1 */
@@ -306,8 +330,17 @@ int main() {
       0.5f, 0.5f
     });
     points.push_back({
-    .3f, .3f
+      .3f, .3f
     });
+    points.push_back({
+      -0.2f, .3f
+    });
+    /* points.push_back({ */
+    /*   .7f, -.6f */
+    /* }); */
+    /* points.push_back({ */
+    /*   -.3f, -.3f */
+    /* }); */
 
     glPointSize(8.0f);
 
@@ -316,40 +349,45 @@ int main() {
 
     // vectorの中身をすべて確認
     /* std::vector<Edge> edges; */
-    std::vector<Triangle> triangles = {outermost_triangle};
+    /* std::vector<Triangle> triangles = {outermost_triangle}; */
+    std::vector<Triangle> primitive_triangles = {outermost_triangle};
+    std::vector<Circle> circumscribed_circle = {};
 
     // pointsを順番に処理していく
     /* for (int i = 0; i < points.size(); ++i) { */
-    int i = 0;
+    /* int i = 0; */
+    /* { */
+    /*   Point point = points.at(i); */
+    /*   Point a = outermost_triangle.a; */
+    /*   Point b = outermost_triangle.b; */
+    /*   Point c = outermost_triangle.c; */
 
-    {
+    /*   /1* triangleからpointに向かうedgeを作成 *1/ */
+    /*   Edge edge1 = Edge(a, point); */
+    /*   Edge edge2 = Edge(b, point); */
+    /*   Edge edge3 = Edge(c, point); */
+
+    /*   /1* edges.push_back(edge1); *1/ */
+    /*   /1* edges.push_back(edge2); *1/ */
+    /*   /1* edges.push_back(edge3); *1/ */
+    /*   Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start); */
+    /*   Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start); */
+    /*   Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start); */
+    /*   primitive_triangles.push_back(triangle1); */
+    /*   primitive_triangles.push_back(triangle2); */
+    /*   primitive_triangles.push_back(triangle3); */
+    /* } */
+
+  std::vector<Triangle> tmpTris = {};
+  for (int i = 0; i < points.size(); ++i) {
+      /* if (i == 0) { */
+      /*   continue; */
+      /* } */
+    std::cout << "i: " << i << std::endl;
+
       Point point = points.at(i);
-      Point a = outermost_triangle.a;
-      Point b = outermost_triangle.b;
-      Point c = outermost_triangle.c;
 
-      /* triangleからpointに向かうedgeを作成 */
-      Edge edge1 = Edge(a, point);
-      Edge edge2 = Edge(b, point);
-      Edge edge3 = Edge(c, point);
-
-      /* edges.push_back(edge1); */
-      /* edges.push_back(edge2); */
-      /* edges.push_back(edge3); */
-      Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start);
-      Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start);
-      Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start);
-      triangles.push_back(triangle1);
-      triangles.push_back(triangle2);
-      triangles.push_back(triangle3);
-    }
-
-std::vector<Triangle> primitive_triangles = {};
-    {
-      i = 1;
-      Point point = points.at(i);
-
-      auto outer_triangle = get_triangle_include_point(point, triangles);
+      auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
       Edge edge1 = Edge(outer_triangle.a, point);
       Edge edge2 = Edge(outer_triangle.b, point);
       Edge edge3 = Edge(outer_triangle.c, point);
@@ -361,25 +399,43 @@ std::vector<Triangle> primitive_triangles = {};
       Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start);
       Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start);
 
-      /* 外接に含まれている三角形のcheckと削除 */
-      std::vector<int> should_remove_list = get_tringles_inner_circumscribed_circle(outer_triangle, triangles);
-      for (int i = should_remove_list.size() - 1; 0 <= i; i--) {
-        triangles.erase(triangles.begin() + should_remove_list[i]);
+      std::vector<Triangle> new_triangles = {triangle1, triangle2, triangle3};
+
+      // 分割された三角形はprimitive_trianglesから除去
+      int divided_triangle_index;
+      for (int j = 0; j < primitive_triangles.size(); j++) {
+        if (primitive_triangles[j].a.x == outer_triangle.a.x && primitive_triangles[j].a.y == outer_triangle.a.y &&
+            primitive_triangles[j].b.x == outer_triangle.b.x && primitive_triangles[j].b.y == outer_triangle.b.y &&
+            primitive_triangles[j].c.x == outer_triangle.c.x && primitive_triangles[j].c.y == outer_triangle.c.y) {
+          divided_triangle_index = j;
+          break;
+        }
+        divided_triangle_index = -1;
       }
 
-    std::vector<Triangle> new_triangles = {triangle1, triangle2, triangle3};
-      /* triangles.push_back(triangle1); */
-      /* triangles.push_back(triangle2); */
-      /* triangles.push_back(triangle3); */
-    /* std::vector<Edge> should_check_edges = {}; */
-
-    for (int i = 0; i < new_triangles.size(); i++) {
-      // new_trianglesの中で pointを含まないedgre →  check_edge
-      legalize_edge(new_triangles[i], primitive_triangles, point);
-      // edgeをｗたすver
+    std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
+    std::cout << "divided_triangle_index: " << divided_triangle_index << std::endl;
+    if (i == 1) {
+      /* tmpTris.push_back(primitive_triangles[divided_triangle_index]); */
+      /* tmpTris.push_back(triangle1); */
     }
 
-      
+      primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
+      std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
+
+      primitive_triangles.push_back(triangle1);
+      primitive_triangles.push_back(triangle2);
+      primitive_triangles.push_back(triangle3);
+        /* triangles.push_back(triangle1); */
+        /* triangles.push_back(triangle2); */
+        /* triangles.push_back(triangle3); */
+      /* std::vector<Edge> should_check_edges = {}; */
+
+      /* for (int j = 0; j < new_triangles.size(); j++) { */
+      /*   // new_trianglesの中で pointを含まないedgre →  check_edge */
+      /*   legalize_edge(new_triangles[j], primitive_triangles, points[i]); */
+      /*   // edgeをｗたすver */
+      /* } */
     }
 
     /* { */
@@ -410,6 +466,7 @@ std::vector<Triangle> primitive_triangles = {};
 
 
     // Loop until the user closes the window
+  std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
     while (!glfwWindowShouldClose(window)) {
         // Render here
         glClear(GL_COLOR_BUFFER_BIT);
@@ -420,6 +477,9 @@ std::vector<Triangle> primitive_triangles = {};
           glVertex2f(point.x, point.y);
         }
         glEnd();
+
+
+        // Draw edges
 
 /*         glBegin(GL_LINES); */
 /*           for (const Edge& edge : edges) { */
@@ -437,12 +497,23 @@ std::vector<Triangle> primitive_triangles = {};
        /* glEnd(); */
 
 
-        glBegin(GL_LINE_LOOP);
-          for (const Triangle& triangle : triangles) {
+        /* TODO: drawの最適化 */
+        for (const Triangle& triangle : primitive_triangles) {
+          glBegin(GL_LINE_LOOP);
             glVertex2f(triangle.a.x, triangle.a.y);
             glVertex2f(triangle.b.x, triangle.b.y);
             glVertex2f(triangle.c.x, triangle.c.y);
-          }
+          glEnd();
+        }
+
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.5,0,0);
+        for (const auto& triangle : tmpTris) {
+          glVertex2f(triangle.a.x, triangle.a.y);
+          glVertex2f(triangle.b.x, triangle.b.y);
+          glVertex2f(triangle.c.x, triangle.c.y);
+        }
+        glColor3f(1.,1.,1.);
         glEnd();
 
         // Swap front and back buffers
