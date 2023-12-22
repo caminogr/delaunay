@@ -5,18 +5,40 @@
 #include <ctime>    // For time()
 #include <iostream>
 
+// test1
 /* {0.5f, 0.5f}, */
 /* {.3f, .3f}, */
 /* {-0.2f, .3f}, */
 /* {.7f, -.6f}, */
 /* {-.3f, -.3f} */
 
+// test2
+/* { -0.74746,  -0.568267 } */
+/* { -0.866454, -0.488082 } */
+/* { 0.801118,   0.383798 } */
+/* { 0.494115,   0.589856 } */
+/* { -0.287665, -0.787233 } */
+/* { 0.967118,   0.355633 } */
+
+
 
 struct Point {
   float x, y;
 
   Point(float x, float y) : x(x), y(y) {}
+
+  bool operator<(const Point& other) const {
+    if (x == other.x) {
+        return y < other.y;
+    }
+    return x < other.x;
+  }
+
+  bool operator==(const Point& other) const {
+    return x == other.x && y == other.y;
+  }
 };
+
 std::ostream& operator<<(std::ostream& os, const Point& point) {
   os << "(" << point.x << ", " << point.y << ")";
   return os;
@@ -26,7 +48,15 @@ struct Edge {
   Point start, end;
 
   Edge(const Point& startPoint, const Point& endPoint) : start(startPoint), end(endPoint) {}
+
+  bool operator==(const Edge& other) const {
+    return (start == other.start && end == other.end) || (start == other.end && end == other.start);
+  }
 };
+std::ostream& operator<<(std::ostream& os, const Edge& edge) {
+  os << "start: " << edge.start << ", end: " << edge.end << "]";
+  return os;
+}
 
 struct Triangle {
   Point a, b, c;
@@ -44,7 +74,20 @@ struct Triangle {
   Edge getEdgeCA() const {
     return Edge(c, a);
   }
+
+  bool hasPoint(const Point& point) const {
+    return a == point || b == point || c == point;
+  }
+
+  bool operator==(const Triangle& other) const {
+    return hasPoint(other.a) && hasPoint(other.b) && hasPoint(other.c);
+  }
+
 };
+std::ostream& operator<<(std::ostream& os, const Triangle& triangle) {
+  os << "[" << triangle.a << ", " << triangle.b << ", " << triangle.c << "]";
+  return os;
+}
 
 struct Circle {
   Point center;
@@ -52,6 +95,11 @@ struct Circle {
 
   Circle(const Point& center, float radius) : center(center), radius(radius) {}
 };
+
+std::vector<Point> debugPoints = {};
+std::vector<Edge> debugEdges = {};
+std::vector<Triangle> debugTriangles = {};
+std::vector<Circle> debugCircles = {};
 
 float cross_product(const Point& A, const Point& B) {
   return A.x * B.y - A.y * B.x;
@@ -66,8 +114,6 @@ Triangle get_triangle_including_window() {
   // TMP
   /* float window_diagonal = std::sqrt(std::pow(800/2, 2) + std::pow(600/2, 2)); */
   float window_diagonal = std::sqrt(std::pow(WINDOW_WIDTH, 2) + std::pow(WINDOW_HEIGHT, 2));
-  std::cout << "window_diagonal" << std::endl;
-  std::cout << window_diagonal << std::endl;
 
   // windowに外接する円の半径める
   float circumscribed_circle_r = window_diagonal / 2;
@@ -112,20 +158,28 @@ bool is_point_in_triangle(
       {triangle.b.x - triangle.c.x, triangle.b.y - triangle.c.y},
       {point.x - triangle.c.x, point.y - triangle.c.y}
   );
+  bool is_point_on_edge = (cross1 == 0) || (cross2 == 0) || (cross3 == 0);
+  /* std::cout << "is_point_on_edge: " << is_point_on_edge << std::endl; */
   
-  return is_same_sign(cross1, cross2, cross3);
+  return is_same_sign(cross1, cross2, cross3) && !is_point_on_edge;
 }
 
 bool is_triangle_in_circle(
   const Triangle& triangle,
   const Circle& circle
 ) {
+  const double EPSILON = 1e-6;
   // 各Pointに対して円の中心からの距離を計算し、それが円の半径よりも小さいかどうかを確認
   float ad = std::sqrt( std::pow(triangle.a.x - circle.center.x, 2) +  std::pow(triangle.a.y - circle.center.y, 2));
   float bd = std::sqrt( std::pow(triangle.b.x - circle.center.x, 2) +  std::pow(triangle.b.y - circle.center.y, 2));
   float cd = std::sqrt( std::pow(triangle.c.x - circle.center.x, 2) +  std::pow(triangle.c.y - circle.center.y, 2));
 
-  return ad <= circle.radius && bd <= circle.radius && cd <= circle.radius;
+  std::cout << "circle.radius " << circle.radius   << std::endl;
+  std::cout << "ad " << ad   << std::endl;
+  std::cout << "bd " << bd   << std::endl;
+  std::cout << "cd " << cd   << std::endl;
+
+  return ad <= (circle.radius + EPSILON) && bd <= (circle.radius + EPSILON) && cd <= (circle.radius + EPSILON);
 }
 
 
@@ -135,15 +189,10 @@ Triangle get_triangle_include_point(
   const Point& point,
   const std::vector<Triangle>& triangles
 ) {
-  // 後ろから走査していく
   int index = triangles.size() - 1;
   while (index >= 0) {
-    /* for (const Triangle& triangle : triangles) { */
-      if (is_point_in_triangle(point, triangles[index])) {
-        return triangles[index];
-      } else {
-        // TODO: 選択した三角形の見つけ方の最適化
-        std::cout << "is_point_in_triangle: false" << std::endl;
+    if (is_point_in_triangle(point, triangles[index])) {
+      return triangles[index];
     }
 
     index--;
@@ -166,7 +215,40 @@ Triangle get_triangle_include_point(
 /*   return circle; */
 /* } */
 
-std::vector<int> get_tringles_inner_circumscribed_circle(const Triangle& triangle, const std::vector<Triangle>& triangles) {
+bool are_triangles_adjacent(const Triangle& triangleA, const Triangle& triangleB) {
+  if (triangleA == triangleB) {
+    return false;
+  };
+
+  Edge edgesA[] = {
+    triangleA.getEdgeAB(),
+    triangleA.getEdgeBC(),
+    triangleA.getEdgeCA(),
+  };
+
+  Edge edgesB[] = {
+    triangleB.getEdgeAB(),
+    triangleB.getEdgeBC(),
+    triangleB.getEdgeCA(),
+  };
+
+  int count = 0;
+  for (const Edge& edgeA : edgesA) {
+      for (const Edge& edgeB : edgesB) {
+          if (edgeA == edgeB) {
+            return true;
+            /* count++; */
+          }
+      }
+  }
+
+  /* if (count == 1) { */
+  /*   return true; */
+  /* } */
+  return false; // 共有する辺はない
+}
+
+Circle get_circumscribed_circle(const Triangle& triangle) {
   float x1 = triangle.a.x;
   float y1 = triangle.a.y;
   float x2 = triangle.b.x;
@@ -186,12 +268,33 @@ std::vector<int> get_tringles_inner_circumscribed_circle(const Triangle& triangl
   float cy = ((x1 - x3) * (x2_2 - x1_2 + y2_2 - y1_2) + (x2 - x1) * (x3_2 - x1_2 + y3_2 - y1_2))/c;
 
   float r = std::sqrt(pow(x1 - cx, 2) + pow(y1 - cy, 2));
-  Circle circumscribed_circle = Circle({cx, cy}, r);
+  return Circle({cx, cy}, r);
+}
+
+std::vector<int> get_adjcent_tringles_inner_circumscribed_circle(const Triangle& triangle, const std::vector<Triangle>& triangles) {
+  Circle circumscribed_circle = get_circumscribed_circle(triangle);
   
   std::vector<int> should_remove_list = {};
   for (int i = 0; i < triangles.size(); i++) {
-    Triangle triangle = triangles[i];
-    if (is_triangle_in_circle(triangle, circumscribed_circle)) {
+    auto a = is_triangle_in_circle(triangles[i], circumscribed_circle);
+    auto b = are_triangles_adjacent(triangle, triangles[i]);
+    std::cout << "a: " << a << std::endl;
+    std::cout << "b: " << b << std::endl;
+    if (b) {
+
+      /* triangle[(-0.3, -0.3), (-0.2, 0.3), (0.7, -0.6)] */
+      /* triangles[i][(0.7, -0.6), (0.3, 0.3), (-0.2, 0.3)] */
+
+      std::cout << "adjacent" << std::endl;
+      std::cout << "triangle" << triangle << std::endl;
+      std::cout << "triangles[i]" << triangles[i] << std::endl;
+
+    }
+
+    if (
+      is_triangle_in_circle(triangles[i], circumscribed_circle) &&
+      are_triangles_adjacent(triangle, triangles[i])
+    ) {
       should_remove_list.push_back(i);
     }
   }
@@ -208,17 +311,29 @@ Edge get_opposite_edge(const Point& point, const Triangle& triangle) {
   }
 }
 
+
+bool has_edge(const Triangle& triangle, const Edge& edge) {
+  Edge edges[] = {
+    triangle.getEdgeAB(),
+    triangle.getEdgeBC(),
+    triangle.getEdgeCA(),
+  };
+
+  for (const Edge& e : edges) {
+    if (e == edge) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 Point get_opposite_point(const Edge& edge, const Triangle& triangle) {
-  if (
-    // Pointがedgeのstartでもendでもない
-    triangle.a.x == edge.start.x && triangle.a.y == edge.start.y ||
-    triangle.a.x == edge.end.x && triangle.a.y == edge.end.y
-  ) {
+  if ((triangle.a.x != edge.start.x || triangle.a.y != edge.start.y) &&
+      (triangle.a.x != edge.end.x || triangle.a.y != edge.end.y)) {
     return triangle.a;
-  } else if (
-    triangle.b.x == edge.start.x && triangle.b.y == edge.start.y ||
-    triangle.b.x == edge.end.x && triangle.b.y == edge.end.y
-  ) {
+  } else if ((triangle.b.x != edge.start.x || triangle.b.y != edge.start.y) &&
+             (triangle.b.x != edge.end.x || triangle.b.y != edge.end.y)) {
     return triangle.b;
   } else {
     return triangle.c;
@@ -226,69 +341,71 @@ Point get_opposite_point(const Edge& edge, const Triangle& triangle) {
 }
 
 void legalize_edge(
-  const Triangle& target_triangle,
+  const Edge& checked_edge,
   /* const std::vector<Triangle>& triangles, */
   std::vector<Triangle>& primitive_triangles,
   const Point& added_point
 ) {
 
+  Triangle target_triangle = Triangle(added_point, checked_edge.start, checked_edge.end);
+  std::vector<int> required_flip_adjucents = get_adjcent_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles);
+  std::cout << "required_flip_adjucents.size: " << required_flip_adjucents.size() << std::endl;
+
+
+  if (required_flip_adjucents.size() == 0) {
+    return;
+  }
+  if (required_flip_adjucents.size() > 1) {
+    std::cout << "required_flip_adjucents.size: " << required_flip_adjucents.size() << std::endl;
+  }
+
+  std::vector<int> adjcents_indexs = {};
+
+  for (int i = 0; i < primitive_triangles.size(); ++i) {
+    if (has_edge(primitive_triangles[i], checked_edge)) {
+      adjcents_indexs.push_back(i);
+    }
+  }
+
+  if (adjcents_indexs.size() < 2) {
+    for (int i = 0; i < adjcents_indexs.size(); ++i) {
+      debugTriangles.push_back(primitive_triangles[adjcents_indexs[i]]);
+    }
+    return;
+  }
+  /* if (adjcents_indexs.size() == 1) { */
+  /*   debugTriangles.push_back(primitive_triangles[adjcents_indexs[0]]); */
+
+  /* } */
+
+  /// added_pointを含んでいる方は最初のinitialiのやつでいい
+  Triangle new_triangle1 = primitive_triangles[adjcents_indexs[0]];
+  Triangle new_triangle2 = primitive_triangles[adjcents_indexs[1]];
+  /* added_pointを含んでいる方を取得 */
+
+  Triangle base_triangle = new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
+  Triangle another_triangle = !new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
+
+  //  check illigal
+  Point unshared_point = get_opposite_point(checked_edge, another_triangle);
+  //  flip
+  // 
+  new_triangle1 = Triangle(added_point, unshared_point, checked_edge.start);
+  new_triangle2 = Triangle(added_point, unshared_point, checked_edge.end);
+  // adjcents_indexs
+
+  primitive_triangles[adjcents_indexs[0]] = new_triangle1;
+  primitive_triangles[adjcents_indexs[1]] = new_triangle2;
+
   // 違反点があったらflipした三角形を再作成
     // flip
     // 違反点を含んでいる三角形を取得
     // 違反している三角形を取得
-    std::vector<int> required_flip_triangles = get_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles);
+  Edge checked_edge1 = get_opposite_edge(added_point, new_triangle1);
+  Edge checked_edge2 = get_opposite_edge(added_point, new_triangle2);
 
-    std::cout << "<= 1であることを期待したコード" << std::endl;
-    std::cout << "primitive_triangles.size(): " << primitive_triangles.size() << std::endl;
-    std::cout << "required_flip_triangles.size(): " << required_flip_triangles.size() << std::endl;
-    if (required_flip_triangles.size() <= 0) {
-      std::cout << "return" << std::endl;
-      return;
-    }
-    std::cout << "called" << std::endl;
-
-    //TODO: target_triangleをprimitiveから削除
-    // 探索のコストがもったいないので primitiveなものだけpushしたい
-    int target_triangle_index;
-    for (int i = 0; i < primitive_triangles.size(); i++) {
-      if (primitive_triangles[i].a.x == target_triangle.a.x && primitive_triangles[i].a.y == target_triangle.a.y &&
-          primitive_triangles[i].b.x == target_triangle.b.x && primitive_triangles[i].b.y == target_triangle.b.y &&
-          primitive_triangles[i].c.x == target_triangle.c.x && primitive_triangles[i].c.y == target_triangle.c.y) {
-        target_triangle_index = i;
-        break;
-      }
-      target_triangle_index = -1;
-    }
-    primitive_triangles.erase(primitive_triangles.begin() + target_triangle_index);
-
-
-  // TODO: 「required_flip_triangles.size() <= 1が正しければfor分の記述を消す
-    /* for (int i = required_flip_triangles.size() - 1; 0 <= i; i--) { */
-    for (int i = 0; i < required_flip_triangles.size(); i++) {
-      Triangle required_flip_triangle = primitive_triangles[required_flip_triangles[i]];
-      // delayney条件を違反するedgeを取得
-      // added_point以外の2点が作るline
-      Edge illegal_edge = get_opposite_edge(added_point, target_triangle);
-      Point unshared_point = get_opposite_point(illegal_edge, required_flip_triangle);
-
-      // target_triangleを削除
-      // TODO: 違反辺を含んでいる三角形を削除
-      /* primitive_triangles.erase(primitive_triangles.begin() + required_flip_triangles[i]); */
-      // 新しく追加した点と違反点(違反している三角形の変を共有していない点)、共有するedgeがもつ点の3つからなる三角形を作成
-      Triangle new_triangle1 = Triangle(added_point, unshared_point, illegal_edge.start);
-      Triangle new_triangle2 = Triangle(added_point, unshared_point, illegal_edge.end);
-      // new_triangle1をprimitiveに追加
-      // new_triangle2をprimitiveに追加
-
-      primitive_triangles.push_back(new_triangle1);
-
-      // flipした三角形の周りの三角形を再帰的にチェック
-      // new triangle 1
-      legalize_edge(new_triangle1, primitive_triangles, added_point);
-      // new triangle 2
-      /* primitive_triangles.push_back(new_triangle2); */
-      /* legalize_edge(new_triangle2, primitive_triangles, added_point); */
-  }
+  legalize_edge(checked_edge1, primitive_triangles, added_point);
+  legalize_edge(checked_edge2, primitive_triangles, added_point);
 }
 
 int main() {
@@ -323,80 +440,68 @@ int main() {
     // Seed for random number generation
     srand(static_cast<unsigned int>(time(nullptr)));
     std::vector<Point> points;
-    /* for (int i = 0; i < 5; ++i) { */
-    /*   points.push_back({ */
-    /*     static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1, */ 
-    /*     static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1 */
-    /*   }); */
-    /* } */
-    points.push_back({
-      0.5f, 0.5f
-    });
-    points.push_back({
-      .3f, .3f
-    });
-    points.push_back({
-      -0.2f, .3f
-    });
+    for (int i = 0; i < 50; ++i) {
+      float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+      float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+      std::cout << "-------------------" << std::endl;
+      std::cout << "x: " << x << std::endl;
+      std::cout << "y: " << y << std::endl;
+      points.push_back({ x, y });
+    }
+
+    /* points.push_back({ */
+    /*   0.5f, 0.5f */
+    /* }); */
+    /* points.push_back({ */
+    /*   .3f, .3f */
+    /* }); */
+    /* points.push_back({ */
+    /*   -0.2f, .3f */
+    /* }); */
     /* points.push_back({ */
     /*   .7f, -.6f */
     /* }); */
+  /* // この点を追加したときのlegalizeの挙動がおかしい */
     /* points.push_back({ */
     /*   -.3f, -.3f */
     /* }); */
 
-    glPointSize(8.0f);
 
+    /* points.push_back({ */
+    /*  -0.74746,  -0.568267 */
+    /* }); */
+    /* points.push_back({ */
+    /*  -0.866454, -0.488082 */ 
+    /* }); */
+    /* points.push_back({ */
+    /*   0.801118,   0.383798 */
+    /* }); */
+    /* points.push_back({ */
+    /*   0.494115,   0.589856 */
+    /* }); */
+    /* points.push_back({ */
+    /*   -0.287665, -0.787233 */
+    /* }); */
+    /* points.push_back({ */
+    /*   0.967118,   0.355633 */
+    /* }); */
+
+    glPointSize(8.0f);
     // windowを内包する三角形の頂点を取得
     Triangle outermost_triangle = get_triangle_including_window();
-
-    // vectorの中身をすべて確認
-    /* std::vector<Edge> edges; */
-    /* std::vector<Triangle> triangles = {outermost_triangle}; */
     std::vector<Triangle> primitive_triangles = {outermost_triangle};
-    std::vector<Circle> circumscribed_circle = {};
+    /* std::vector<Circle> circumscribed_circle = {}; */
 
-    // pointsを順番に処理していく
-    /* for (int i = 0; i < points.size(); ++i) { */
-    /* int i = 0; */
-    /* { */
-    /*   Point point = points.at(i); */
-    /*   Point a = outermost_triangle.a; */
-    /*   Point b = outermost_triangle.b; */
-    /*   Point c = outermost_triangle.c; */
-
-    /*   /1* triangleからpointに向かうedgeを作成 *1/ */
-    /*   Edge edge1 = Edge(a, point); */
-    /*   Edge edge2 = Edge(b, point); */
-    /*   Edge edge3 = Edge(c, point); */
-
-    /*   /1* edges.push_back(edge1); *1/ */
-    /*   /1* edges.push_back(edge2); *1/ */
-    /*   /1* edges.push_back(edge3); *1/ */
-    /*   Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start); */
-    /*   Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start); */
-    /*   Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start); */
-    /*   primitive_triangles.push_back(triangle1); */
-    /*   primitive_triangles.push_back(triangle2); */
-    /*   primitive_triangles.push_back(triangle3); */
-    /* } */
-
-  std::vector<Triangle> tmpTris = {};
   for (int i = 0; i < points.size(); ++i) {
-      /* if (i == 0) { */
-      /*   continue; */
-      /* } */
-    std::cout << "i: " << i << std::endl;
+      std::cout << "i: " << i << std::endl;
 
       Point point = points.at(i);
 
       auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
+
       Edge edge1 = Edge(outer_triangle.a, point);
       Edge edge2 = Edge(outer_triangle.b, point);
       Edge edge3 = Edge(outer_triangle.c, point);
-      /* edges.push_back(edge1); */
-      /* edges.push_back(edge2); */
-      /* edges.push_back(edge3); */
 
       Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start);
       Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start);
@@ -407,74 +512,48 @@ int main() {
       // 分割された三角形はprimitive_trianglesから除去
       int divided_triangle_index;
       for (int j = 0; j < primitive_triangles.size(); j++) {
-        if (primitive_triangles[j].a.x == outer_triangle.a.x && primitive_triangles[j].a.y == outer_triangle.a.y &&
-            primitive_triangles[j].b.x == outer_triangle.b.x && primitive_triangles[j].b.y == outer_triangle.b.y &&
-            primitive_triangles[j].c.x == outer_triangle.c.x && primitive_triangles[j].c.y == outer_triangle.c.y) {
+        if (primitive_triangles[j] == outer_triangle) {
           divided_triangle_index = j;
           break;
         }
         divided_triangle_index = -1;
       }
 
-    std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
-    std::cout << "divided_triangle_index: " << divided_triangle_index << std::endl;
-    if (i == 1) {
-      /* tmpTris.push_back(primitive_triangles[divided_triangle_index]); */
-      /* tmpTris.push_back(triangle1); */
-    }
-
+      std::cout << "divided_triangle_index: " << divided_triangle_index << std::endl;
       primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
-      std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
 
       primitive_triangles.push_back(triangle1);
       primitive_triangles.push_back(triangle2);
       primitive_triangles.push_back(triangle3);
-        /* triangles.push_back(triangle1); */
-        /* triangles.push_back(triangle2); */
-        /* triangles.push_back(triangle3); */
-      /* std::vector<Edge> should_check_edges = {}; */
 
-      /* for (int j = 0; j < new_triangles.size(); j++) { */
-      /*   // new_trianglesの中で pointを含まないedgre →  check_edge */
-      /*   legalize_edge(new_triangles[j], primitive_triangles, points[i]); */
-      /*   // edgeをｗたすver */
-      /* } */
+      for (int j = 0; j < new_triangles.size(); j++) {
+        Edge checked_edge = get_opposite_edge(points[i], new_triangles[j]);
+        legalize_edge(checked_edge, primitive_triangles, points[i]);
+      }
     }
 
-    /* { */
-    /*   i = 2; */
-    /*   Point point = points.at(i); */
+  std::vector<Triangle> display_triangles = {};
+  for (int i = 0; i <= primitive_triangles.size(); ++i) {
+    std::cout << "i: " << i << std::endl;
+    // TODO: 2つの頂点が同じtriangleがある
+    std::cout << primitive_triangles[i] << std::endl;
+  }
 
-    /*   auto outer_triangle = get_triangle_include_point(point, triangles); */
-    /*   Edge edge1 = Edge(point, outer_triangle.a); */
-    /*   Edge edge2 = Edge(point, outer_triangle.b); */
-    /*   Edge edge3 = Edge(point, outer_triangle.c); */
-    /*   /1* edges.push_back(edge1); *1/ */
-    /*   /1* edges.push_back(edge2); *1/ */
-    /*   /1* edges.push_back(edge3); *1/ */
+  for (int i = 0; i <= primitive_triangles.size(); ++i) {
+    if (
+      !(primitive_triangles[i].hasPoint(outermost_triangle.a) || 
+        primitive_triangles[i].hasPoint(outermost_triangle.b) ||
+        primitive_triangles[i].hasPoint(outermost_triangle.c))
+    ) {
+      display_triangles.push_back(primitive_triangles[i]);
+      debugCircles.push_back(get_circumscribed_circle(primitive_triangles[i]));
+    }
+  }
 
-    /*   Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.end); */
-    /*   Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.end); */
-    /*   Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.end); */
-    /*   triangles.push_back(triangle1); */
-    /*   triangles.push_back(triangle2); */
-    /*   triangles.push_back(triangle3); */
-
-    /*   /1* 外接に含まれている三角形のcheckと削除 *1/ */
-    /*   std::vector<int> should_remove_list = get_tringles_inner_circumscribed_circle(point, outer_triangle, triangles); */
-    /*   for (int i = should_remove_list.size() - 1; 0 <= i; i--) { */
-    /*     triangles.erase(triangles.begin() + should_remove_list[i]); */
-    /*   } */
-  /* } */
-
-
-    // Loop until the user closes the window
-  std::cout << "primitive_triangles.size() = " << primitive_triangles.size() << std::endl;
     while (!glfwWindowShouldClose(window)) {
         // Render here
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw random points
         glBegin(GL_POINTS);
         for (const auto& point : points) {
           glVertex2f(point.x, point.y);
@@ -483,7 +562,6 @@ int main() {
 
 
         // Draw edges
-
 /*         glBegin(GL_LINES); */
 /*           for (const Edge& edge : edges) { */
 /*             glVertex2f(edge.start.x, edge.start.y); */
@@ -491,17 +569,9 @@ int main() {
 /*           } */
 /*         glEnd(); */
 
-      // circle
-       /* glBegin(GL_LINE_LOOP); */
-       /*   for (int i = 0; i <= 360; i++) { */
-       /*       float degInRad = i * M_PI / 180; */
-       /*       glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius); *1/ */
-       /*   } */
-       /* glEnd(); */
-
 
         /* TODO: drawの最適化 */
-        for (const Triangle& triangle : primitive_triangles) {
+        for (const Triangle& triangle : display_triangles) {
           glBegin(GL_LINE_LOOP);
             glVertex2f(triangle.a.x, triangle.a.y);
             glVertex2f(triangle.b.x, triangle.b.y);
@@ -509,15 +579,47 @@ int main() {
           glEnd();
         }
 
-        glBegin(GL_TRIANGLES);
-        glColor3f(0.5,0,0);
-        for (const auto& triangle : tmpTris) {
-          glVertex2f(triangle.a.x, triangle.a.y);
-          glVertex2f(triangle.b.x, triangle.b.y);
-          glVertex2f(triangle.c.x, triangle.c.y);
-        }
-        glColor3f(1.,1.,1.);
-        glEnd();
+        /* glBegin(GL_POINTS); */
+        /* glColor3f(0.0, 0.0, 0.5); */
+        /* for (const auto& point : debugPoints) { */
+        /*   glVertex2f(point.x, point.y); */
+        /* } */
+        /* glColor3f(1.,1.,1.); */
+        /* glEnd(); */
+
+        /* glBegin(GL_TRIANGLES); */
+        /* /1* glColor3f(0.5,0,0); *1/ */
+        /* /1* for (const auto& triangle : debugTriangles) { *1/ */
+        /* for (const auto& triangle : display_triangles) { */
+      /* //radnom color */
+        /*   glColor3f((float)rand()/RAND_MAX, (float)rand()/RAND_MAX, (float)rand()/RAND_MAX); */
+      
+        /*   glVertex2f(triangle.a.x, triangle.a.y); */
+        /*   glVertex2f(triangle.b.x, triangle.b.y); */
+        /*   glVertex2f(triangle.c.x, triangle.c.y); */
+        /* } */
+        /* glColor3f(1.,1.,1.); */
+        /* glEnd(); */
+
+
+/*         glBegin(GL_LINES); */
+/*           glColor3f(0.0,0.5,0); */
+/*           for (const Edge& edge : debugEdges) { */
+/*             glVertex2f(edge.start.x, edge.start.y); */
+/*             glVertex2f(edge.end.x, edge.end.y); */
+/*           } */
+/*         glColor3f(1.,1.,1.); */
+/*         glEnd(); */
+
+        /* glBegin(GL_LINE_LOOP); */
+        /*   for (const Circle& circle : debugCircles) { */
+        /*     for (int i = 0; i <= 360; i++) { */
+        /*       float degInRad = i * M_PI / 180; */
+        /*       glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius); */
+        /*     } */
+        /*   } */
+        /* glEnd(); */
+
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
