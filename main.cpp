@@ -5,22 +5,6 @@
 #include <ctime>    // For time()
 #include <iostream>
 
-// test1
-/* {0.5f, 0.5f}, */
-/* {.3f, .3f}, */
-/* {-0.2f, .3f}, */
-/* {.7f, -.6f}, */
-/* {-.3f, -.3f} */
-
-// test2
-/* { -0.74746,  -0.568267 } */
-/* { -0.866454, -0.488082 } */
-/* { 0.801118,   0.383798 } */
-/* { 0.494115,   0.589856 } */
-/* { -0.287665, -0.787233 } */
-/* { 0.967118,   0.355633 } */
-
-
 
 struct Point {
   float x, y;
@@ -408,51 +392,13 @@ int main() {
     // Seed for random number generation
     srand(static_cast<unsigned int>(time(nullptr)));
     std::vector<Point> points;
+
     for (int i = 0; i < 50; ++i) {
       float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
       float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-      std::cout << "-------------------" << std::endl;
-      std::cout << "x: " << x << std::endl;
-      std::cout << "y: " << y << std::endl;
+      std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
       points.push_back({ x, y });
     }
-
-    /* points.push_back({ */
-    /*   0.5f, 0.5f */
-    /* }); */
-    /* points.push_back({ */
-    /*   .3f, .3f */
-    /* }); */
-    /* points.push_back({ */
-    /*   -0.2f, .3f */
-    /* }); */
-    /* points.push_back({ */
-    /*   .7f, -.6f */
-    /* }); */
-  /* // この点を追加したときのlegalizeの挙動がおかしい */
-    /* points.push_back({ */
-    /*   -.3f, -.3f */
-    /* }); */
-
-
-    /* points.push_back({ */
-    /*  -0.74746,  -0.568267 */
-    /* }); */
-    /* points.push_back({ */
-    /*  -0.866454, -0.488082 */ 
-    /* }); */
-    /* points.push_back({ */
-    /*   0.801118,   0.383798 */
-    /* }); */
-    /* points.push_back({ */
-    /*   0.494115,   0.589856 */
-    /* }); */
-    /* points.push_back({ */
-    /*   -0.287665, -0.787233 */
-    /* }); */
-    /* points.push_back({ */
-    /*   0.967118,   0.355633 */
-    /* }); */
 
     glPointSize(8.0f);
     // windowを内包する三角形の頂点を取得
@@ -461,8 +407,6 @@ int main() {
     /* std::vector<Circle> circumscribed_circle = {}; */
 
   for (int i = 0; i < points.size(); ++i) {
-      std::cout << "i: " << i << std::endl;
-
       Point point = points.at(i);
 
       auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
