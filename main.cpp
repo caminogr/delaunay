@@ -147,7 +147,7 @@ bool is_point_in_triangle(
   const Triangle& triangle
 ) {
   float cross1 = cross_product(
-      {triangle.a.x - triangle.b.x, triangle.a.y - triangle.b.y}, 
+      {triangle.a.x - triangle.b.x, triangle.a.y - triangle.b.y},
       {point.x - triangle.b.x, point.y - triangle.b.y}
     );
   float cross2 = cross_product(
@@ -170,11 +170,6 @@ bool is_triangle_in_circle(
   float ad = std::sqrt( std::pow(triangle.a.x - circle.center.x, 2) +  std::pow(triangle.a.y - circle.center.y, 2));
   float bd = std::sqrt( std::pow(triangle.b.x - circle.center.x, 2) +  std::pow(triangle.b.y - circle.center.y, 2));
   float cd = std::sqrt( std::pow(triangle.c.x - circle.center.x, 2) +  std::pow(triangle.c.y - circle.center.y, 2));
-
-  std::cout << "circle.radius " << circle.radius   << std::endl;
-  std::cout << "ad " << ad   << std::endl;
-  std::cout << "bd " << bd   << std::endl;
-  std::cout << "cd " << cd   << std::endl;
 
   return ad <= (circle.radius + EPSILON) && bd <= (circle.radius + EPSILON) && cd <= (circle.radius + EPSILON);
 }
@@ -271,18 +266,6 @@ std::vector<int> get_adjcent_tringles_inner_circumscribed_circle(const Triangle&
   for (int i = 0; i < triangles.size(); i++) {
     auto a = is_triangle_in_circle(triangles[i], circumscribed_circle);
     auto b = are_triangles_adjacent(triangle, triangles[i]);
-    std::cout << "a: " << a << std::endl;
-    std::cout << "b: " << b << std::endl;
-    if (b) {
-
-      /* triangle[(-0.3, -0.3), (-0.2, 0.3), (0.7, -0.6)] */
-      /* triangles[i][(0.7, -0.6), (0.3, 0.3), (-0.2, 0.3)] */
-
-      std::cout << "adjacent" << std::endl;
-      std::cout << "triangle" << triangle << std::endl;
-      std::cout << "triangles[i]" << triangles[i] << std::endl;
-
-    }
 
     if (
       is_triangle_in_circle(triangles[i], circumscribed_circle) &&
@@ -342,14 +325,13 @@ void legalize_edge(
 
   Triangle target_triangle = Triangle(added_point, checked_edge.start, checked_edge.end);
   std::vector<int> required_flip_adjucents = get_adjcent_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles);
-  std::cout << "required_flip_adjucents.size: " << required_flip_adjucents.size() << std::endl;
 
 
   if (required_flip_adjucents.size() == 0) {
     return;
   }
   if (required_flip_adjucents.size() > 1) {
-    std::cout << "required_flip_adjucents.size: " << required_flip_adjucents.size() << std::endl;
+    throw std::runtime_error("flip triangle is not unique");
   }
 
   std::vector<int> adjcents_indexs = {};
@@ -361,15 +343,8 @@ void legalize_edge(
   }
 
   if (adjcents_indexs.size() < 2) {
-    for (int i = 0; i < adjcents_indexs.size(); ++i) {
-      debugTriangles.push_back(primitive_triangles[adjcents_indexs[i]]);
-    }
     return;
   }
-  /* if (adjcents_indexs.size() == 1) { */
-  /*   debugTriangles.push_back(primitive_triangles[adjcents_indexs[0]]); */
-
-  /* } */
 
   /// added_pointを含んでいる方は最初のinitialiのやつでいい
   Triangle new_triangle1 = primitive_triangles[adjcents_indexs[0]];
@@ -512,7 +487,6 @@ int main() {
         divided_triangle_index = -1;
       }
 
-      std::cout << "divided_triangle_index: " << divided_triangle_index << std::endl;
       primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
 
       primitive_triangles.push_back(triangle1);
