@@ -158,10 +158,7 @@ bool is_point_in_triangle(
       {triangle.b.x - triangle.c.x, triangle.b.y - triangle.c.y},
       {point.x - triangle.c.x, point.y - triangle.c.y}
   );
-  bool is_point_on_edge = (cross1 == 0) || (cross2 == 0) || (cross3 == 0);
-  /* std::cout << "is_point_on_edge: " << is_point_on_edge << std::endl; */
-  
-  return is_same_sign(cross1, cross2, cross3) && !is_point_on_edge;
+  return is_same_sign(cross1, cross2, cross3);
 }
 
 bool is_triangle_in_circle(
@@ -189,16 +186,12 @@ Triangle get_triangle_include_point(
   const Point& point,
   const std::vector<Triangle>& triangles
 ) {
-  int index = triangles.size() - 1;
-  while (index >= 0) {
-    if (is_point_in_triangle(point, triangles[index])) {
-      return triangles[index];
+  for (int i = 0; i < triangles.size(); ++i) {
+    if (is_point_in_triangle(point, triangles[i])) {
+      return triangles[i];
     }
-
-    index--;
   }
-
-  return triangles[0];
+  throw std::runtime_error("not found triangle including point");
 }
 
 
