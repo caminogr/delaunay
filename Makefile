@@ -1,11 +1,18 @@
 CC = g++
 
-CFLAGS = -framework OpenGL -framework GLUT -lGLEW -lglfw -std=c++17
+CFLAGS = -std=c++17 -I./libs
+LDFLAGS = -framework OpenGL -framework GLUT -lGLEW -lglfw
 TARGET = out
-SRC = main.cpp
+SOURCES = main.cpp libs/SimplexNoise.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
 
-$(TARGET): $(SRC)
-	$(CC) -o $(TARGET) $(SRC) $(CFLAGS)
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(OBJECTS) $(TARGET)

@@ -4,7 +4,9 @@
 #include <cstdlib>  // For rand() and srand()
 #include <ctime>    // For time()
 #include <iostream>
+#include <chrono>
 
+#include "SimplexNoise.h"
 
 struct Point {
   float x, y;
@@ -361,6 +363,7 @@ void legalize_edge(
 }
 
 int main() {
+    auto startTime = std::chrono::high_resolution_clock::now();
     // Initialize GLFW
     if (!glfwInit()) {
         return -1;
@@ -399,6 +402,7 @@ int main() {
       std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
       points.push_back({ x, y });
     }
+
 
     glPointSize(8.0f);
     // windowを内包する三角形の頂点を取得
@@ -462,6 +466,11 @@ int main() {
   }
 
     while (!glfwWindowShouldClose(window)) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+        float noise = SimplexNoise::noise(sin(elapsedTime));
+
+    
         // Render here
         glClear(GL_COLOR_BUFFER_BIT);
 
