@@ -8,6 +8,8 @@
 
 #include "SimplexNoise.h"
 
+const double EPSILON = 1e-6;
+
 struct Point {
   float x, y;
 
@@ -151,7 +153,6 @@ bool is_triangle_in_circle(
   const Triangle& triangle,
   const Circle& circle
 ) {
-  const double EPSILON = 1e-6;
   // 各Pointに対して円の中心からの距離を計算し、それが円の半径よりも小さいかどうかを確認
   float ad = std::sqrt( std::pow(triangle.a.x - circle.center.x, 2) +  std::pow(triangle.a.y - circle.center.y, 2));
   float bd = std::sqrt( std::pow(triangle.b.x - circle.center.x, 2) +  std::pow(triangle.b.y - circle.center.y, 2));
