@@ -393,68 +393,12 @@ int main() {
     srand(static_cast<unsigned int>(time(nullptr)));
     std::vector<Point> points;
 
-    /* for (int i = 0; i < 50; ++i) { */
-    /*   float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
-    /*   float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
-    /*   std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl; */
-    /*   points.push_back({ x, y }); */
-    /* } */
-    points.push_back({-0.767546, -0.145166});
-    points.push_back({0.202364, -0.863758});
-    points.push_back({0.825328, -0.714655});
-    points.push_back({0.791245, 0.45663});
-    points.push_back({0.58618, -0.0702136});
-    points.push_back({-0.0805794, -0.298298});
-    points.push_back({0.499409, -0.434515});
-    points.push_back({-0.898677, -0.0720055});
-    points.push_back({-0.195384, 0.182066});
-    points.push_back({-0.0180737, 0.234261});
-    points.push_back({-0.771895, 0.757453});
-    points.push_back({0.51949, -0.922842});
-    points.push_back({-0.203422, -0.911085});
-    points.push_back({-0.609794, -0.801637});
-    points.push_back({0.878937, 0.297655});
-    points.push_back({0.695709, 0.784187});
-
-    points.push_back({-0.163407, -0.375225});
-
-/*     points.push_back({-0.400639, 0.458228}); */
-/*     points.push_back({-0.555912, 0.788113}); */
-/*     points.push_back({-0.184296, 0.532426}); */
-/*     points.push_back({0.483381, 0.184391}); */
-/*     points.push_back({-0.948322, -0.445834}); */
-/*     points.push_back({0.866454, 0.486924}); */
-/*     points.push_back({-0.26871, -0.213386}); */
-/*     points.push_back({-0.374334, 0.560593}); */
-/*     points.push_back({-0.118294, -0.17537}); */
-/*     points.push_back({0.560904, -0.891501}); */
-/*     points.push_back({0.547215, -0.9583}); */
-/*     points.push_back({-0.152796, -0.0498828}); */
-/*     points.push_back({-0.379466, 0.311875}); */
-/*     points.push_back({-0.321911, -0.350607}); */
-/*     points.push_back({-0.645729, -0.760471}); */
-/*     points.push_back({0.756981, 0.57488}); */
-/*     points.push_back({0.0161117, 0.789175}); */
-
-/*   // エラーが起きる点 */
-/*     points.push_back({-0.329202, -0.894629}); */
-
-/*     points.push_back({-0.0233526, -0.487339}); */
-/*     points.push_back({-0.707355, -0.520227}); */
-/*     points.push_back({0.547975, -0.190283}); */
-/*     points.push_back({-0.0898418, 0.0287994}); */
-
-/*     points.push_back({0.0322551, 0.110661}); */
-/*     points.push_back({-0.115743, 0.706732}); */
-/*     points.push_back({0.0420176, 0.188974}); */
-/*     points.push_back({0.0943476, -0.300882}); */
-/*     points.push_back({-0.920333, -0.0355234}); */
-/*     points.push_back({0.957634, 0.951399}); */
-/*     points.push_back({0.169056, -0.670662}); */
-/*     points.push_back({0.190611, -0.393429}); */
-/*     points.push_back({-0.357315, 0.603307}); */
-/*     points.push_back({-0.21917, 0.413723}); */
-/*     points.push_back({-0.565881, -0.762494}); */
+    for (int i = 0; i < 50; ++i) {
+      float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+      float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+      std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
+      points.push_back({ x, y });
+    }
 
 
     glPointSize(8.0f);
@@ -494,11 +438,8 @@ int main() {
       primitive_triangles.push_back(triangle2);
       primitive_triangles.push_back(triangle3);
 
-      std::cout << "======= i: " << i << std::endl;
       for (int j = 0; j < new_triangles.size(); j++) {
         Edge checked_edge = get_opposite_edge(points[i], new_triangles[j]);
-        std::cout << "========================= checked_edge: " << checked_edge << std::endl;
-        std::cout << "======= new_triangles[j]: " << new_triangles[j] << std::endl;
         legalize_edge(checked_edge, primitive_triangles, points[i]);
       }
     }
