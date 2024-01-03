@@ -9,7 +9,7 @@
 #include "SimplexNoise.h"
 
 const double EPSILON = 1e-5;
-const int POINTS_NUM = 20;
+const int POINTS_NUM = 60;
 
 struct Point {
   float x, y;
@@ -180,9 +180,9 @@ Triangle get_triangle_include_point(
   const Point& point,
   const std::vector<Triangle>& triangles
 ) {
-  for (int i = 0; i < triangles.size(); ++i) {
-    if (is_point_in_triangle(point, triangles[i])) {
-      return triangles[i];
+  for (const Triangle& triangle : triangles) {
+    if (is_point_in_triangle(point, triangle)) {
+      return triangle;
     }
   }
   throw std::runtime_error("not found triangle including point");
@@ -421,9 +421,7 @@ int main() {
 
     std::vector<Triangle> primitive_triangles = {outermost_triangle};
 
-    for (int i = 0; i < points.size(); ++i) {
-      Point point = points.at(i);
-
+    for (const Point& point : points) {
       auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
 
       Edge edge1 = Edge(outer_triangle.a, point);
@@ -454,25 +452,25 @@ int main() {
       primitive_triangles.push_back(triangle2);
       primitive_triangles.push_back(triangle3);
 
-      for (int j = 0; j < new_triangles.size(); j++) {
-        Edge checked_edge = get_opposite_edge(points[i], new_triangles[j]);
-        legalize_edge(checked_edge, primitive_triangles, points[i]);
+      for (const Triangle& triangle : new_triangles) {
+        Edge checked_edge = get_opposite_edge(point, triangle);
+        legalize_edge(checked_edge, primitive_triangles, point);
       }
     }
 
   std::vector<Triangle> display_triangles = {};
-  for (int i = 0; i < primitive_triangles.size(); ++i) {
-    /* display_triangles.push_back(primitive_triangles[i]); */
+  for (const Triangle& primitive_triangle : primitive_triangles) {
+    /* display_triangles.push_back(primitive_triangle); */
   }
 
-  for (int i = 0; i < primitive_triangles.size(); ++i) {
+  for (const Triangle& primitive_triangle : primitive_triangles) {
     if (
-      !(primitive_triangles[i].hasPoint(outermost_triangle.a) || 
-        primitive_triangles[i].hasPoint(outermost_triangle.b) ||
-        primitive_triangles[i].hasPoint(outermost_triangle.c))
+      !(primitive_triangle.hasPoint(outermost_triangle.a) || 
+        primitive_triangle.hasPoint(outermost_triangle.b) ||
+        primitive_triangle.hasPoint(outermost_triangle.c))
     ) {
-      display_triangles.push_back(primitive_triangles[i]);
-      debugCircles.push_back(get_circumscribed_circle(primitive_triangles[i]));
+      display_triangles.push_back(primitive_triangle);
+      debugCircles.push_back(get_circumscribed_circle(primitive_triangle));
     }
   }
 
