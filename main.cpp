@@ -173,7 +173,7 @@ Triangle get_triangle_include_point(
       return triangles[i];
     }
   }
-  throw std::runtime_error("not found triangle including point");
+  /* throw std::runtime_error("not found triangle including point"); */
 }
 
 
@@ -296,7 +296,7 @@ void legalize_edge(
     return;
   }
   if (required_flip_adjucents.size() > 1) {
-    throw std::runtime_error("flip triangle is not unique");
+    /* throw std::runtime_error("flip triangle is not unique"); */
   }
 
   std::vector<int> adjcents_indexs = {};
@@ -333,54 +333,67 @@ void legalize_edge(
 }
 
 int main() {
-    auto startTime = std::chrono::high_resolution_clock::now();
-    // Initialize GLFW
-    if (!glfwInit()) {
-        return -1;
-    }
+  auto startTime = std::chrono::high_resolution_clock::now();
+  // Initialize GLFW
+  if (!glfwInit()) {
+      return -1;
+  }
 
-    // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Delaunay", nullptr, nullptr);
-    if (!window) {
-        glfwTerminate();
-        return -1;
-    }
+  // Create a windowed mode window and its OpenGL context
+  GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Delaunay", nullptr, nullptr);
+  if (!window) {
+      glfwTerminate();
+      return -1;
+  }
 
-    // Make the window's context current
-    glfwMakeContextCurrent(window);
+  // Make the window's context current
+  glfwMakeContextCurrent(window);
 
-    // Initialize GLEW
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        glfwTerminate();
-        return -1;
-    }
+  // Initialize GLEW
+  glewExperimental = GL_TRUE;
+  if (glewInit() != GLEW_OK) {
+      glfwTerminate();
+      return -1;
+  }
 
-    // Set viewport
-    int width, height;
-    // retina display 対応
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
+  // Set viewport
+  int width, height;
+  // retina display 対応
+  glfwGetFramebufferSize(window, &width, &height);
+  glViewport(0, 0, width, height);
 
-    // Seed for random number generation
-    srand(static_cast<unsigned int>(time(nullptr)));
+  // Seed for random number generation
+  srand(static_cast<unsigned int>(time(nullptr)));
+  std::vector<Point> ori_points;
+
+  for (int i = 0; i < 10; ++i) {
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+    std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
+    ori_points.push_back({ x, y });
+  }
+
+
+  glPointSize(8.0f);
+  Triangle outermost_triangle = get_triangle_including_window();
+
+  while (!glfwWindowShouldClose(window)) {
     std::vector<Point> points;
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
-    for (int i = 0; i < 50; ++i) {
-      float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-      float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-      std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
-      points.push_back({ x, y });
+    for (int i = 0; i < ori_points.size(); ++i) {
+      Point point = ori_points.at(i);
+      float noise_x = SimplexNoise::noise(i, elapsedTime * 0.0001 * i/10);
+      float noise_y = SimplexNoise::noise(point.x * point.y * i, elapsedTime * 0.0001 * i/10);
+      point = Point(point.x + noise_x * 0.1, point.y + noise_y * 0.1);
+
+      points.push_back(point);
     }
 
-
-    glPointSize(8.0f);
-    // windowを内包する三角形の頂点を取得
-    Triangle outermost_triangle = get_triangle_including_window();
     std::vector<Triangle> primitive_triangles = {outermost_triangle};
-    /* std::vector<Circle> circumscribed_circle = {}; */
 
-  for (int i = 0; i < points.size(); ++i) {
+    for (int i = 0; i < points.size(); ++i) {
       Point point = points.at(i);
 
       auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
@@ -433,22 +446,16 @@ int main() {
     }
   }
 
-    while (!glfwWindowShouldClose(window)) {
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
-        float noise = SimplexNoise::noise(sin(elapsedTime));
+    // Render here
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    
-        // Render here
-        glClear(GL_COLOR_BUFFER_BIT);
+    glBegin(GL_POINTS);
+    for (const auto& point : points) {
+      glVertex2f(point.x, point.y);
+    }
+    glEnd();
 
-        glBegin(GL_POINTS);
-        for (const auto& point : points) {
-          glVertex2f(point.x, point.y);
-        }
-        glEnd();
-
-        // Draw edges
+    // Draw edges
 /*         glBegin(GL_LINES); */
 /*           for (const Edge& edge : edges) { */
 /*             glVertex2f(edge.start.x, edge.start.y); */
@@ -457,36 +464,36 @@ int main() {
 /*         glEnd(); */
 
 
-        /* TODO: drawの最適化 */
-        for (const Triangle& triangle : display_triangles) {
-          glBegin(GL_LINE_LOOP);
-            glVertex2f(triangle.a.x, triangle.a.y);
-            glVertex2f(triangle.b.x, triangle.b.y);
-            glVertex2f(triangle.c.x, triangle.c.y);
-          glEnd();
-        }
+    /* TODO: drawの最適化 */
+    for (const Triangle& triangle : display_triangles) {
+      glBegin(GL_LINE_LOOP);
+        glVertex2f(triangle.a.x, triangle.a.y);
+        glVertex2f(triangle.b.x, triangle.b.y);
+        glVertex2f(triangle.c.x, triangle.c.y);
+      glEnd();
+    }
 
-        /* glBegin(GL_POINTS); */
-        /* glColor3f(0.0, 0.0, 0.5); */
-        /* for (const auto& point : debugPoints) { */
-        /*   glVertex2f(point.x, point.y); */
-        /* } */
-        /* glColor3f(1.,1.,1.); */
-        /* glEnd(); */
+    /* glBegin(GL_POINTS); */
+    /* glColor3f(0.0, 0.0, 0.5); */
+    /* for (const auto& point : debugPoints) { */
+    /*   glVertex2f(point.x, point.y); */
+    /* } */
+    /* glColor3f(1.,1.,1.); */
+    /* glEnd(); */
 
-        /* glBegin(GL_TRIANGLES); */
-        /* /1* glColor3f(0.5,0,0); *1/ */
-        /* /1* for (const auto& triangle : debugTriangles) { *1/ */
-        /* for (const auto& triangle : display_triangles) { */
-      /* //radnom color */
-        /*   glColor3f((float)rand()/RAND_MAX, (float)rand()/RAND_MAX, (float)rand()/RAND_MAX); */
-      
-        /*   glVertex2f(triangle.a.x, triangle.a.y); */
-        /*   glVertex2f(triangle.b.x, triangle.b.y); */
-        /*   glVertex2f(triangle.c.x, triangle.c.y); */
-        /* } */
-        /* glColor3f(1.,1.,1.); */
-        /* glEnd(); */
+    /* glBegin(GL_TRIANGLES); */
+    /* /1* glColor3f(0.5,0,0); *1/ */
+    /* /1* for (const auto& triangle : debugTriangles) { *1/ */
+    /* for (const auto& triangle : display_triangles) { */
+  /* //radnom color */
+    /*   glColor3f((float)rand()/RAND_MAX, (float)rand()/RAND_MAX, (float)rand()/RAND_MAX); */
+  
+    /*   glVertex2f(triangle.a.x, triangle.a.y); */
+    /*   glVertex2f(triangle.b.x, triangle.b.y); */
+    /*   glVertex2f(triangle.c.x, triangle.c.y); */
+    /* } */
+    /* glColor3f(1.,1.,1.); */
+    /* glEnd(); */
 
 
 /*         glBegin(GL_LINES); */
@@ -498,23 +505,23 @@ int main() {
 /*         glColor3f(1.,1.,1.); */
 /*         glEnd(); */
 
-        /* glBegin(GL_LINE_LOOP); */
-        /*   for (const Circle& circle : debugCircles) { */
-        /*     for (int i = 0; i <= 360; i++) { */
-        /*       float degInRad = i * M_PI / 180; */
-        /*       glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius); */
-        /*     } */
-        /*   } */
-        /* glEnd(); */
+    /* glBegin(GL_LINE_LOOP); */
+    /*   for (const Circle& circle : debugCircles) { */
+    /*     for (int i = 0; i <= 360; i++) { */
+    /*       float degInRad = i * M_PI / 180; */
+    /*       glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius); */
+    /*     } */
+    /*   } */
+    /* glEnd(); */
 
 
-        // Swap front and back buffers
-        glfwSwapBuffers(window);
+    // Swap front and back buffers
+    glfwSwapBuffers(window);
 
-        // Poll for and process events
-        glfwPollEvents();
-    }
+    // Poll for and process events
+    glfwPollEvents();
+  }
 
-    glfwTerminate();
-    return 0;
+  glfwTerminate();
+  return 0;
 }
