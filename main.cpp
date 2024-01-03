@@ -177,19 +177,6 @@ Triangle get_triangle_include_point(
 }
 
 
-/* 全ての三角形をチェック: */
-/* 分割中の全ての三角形に対して、その外接円が追加された点を含むかどうかをチェックします。 */
-
-/* 外接円内の点の判定: */
-/* 三角形の外接円の中心から追加された点までの距離を計算し、それが外接円の半径よりも小さいかどうかを確認します。距離が半径よりも小さい場合、その点は外接円内にあります。 */
-
-
-
-/* Circle get_circumscribed_circle(const Point& center, radius) { */
-/*   Circle circle = Circle(Point(0.0f, 0.0f), 0.0f); */
-/*   return circle; */
-/* } */
-
 bool are_triangles_adjacent(const Triangle& triangleA, const Triangle& triangleB) {
   if (triangleA == triangleB) {
     return false;
@@ -212,15 +199,11 @@ bool are_triangles_adjacent(const Triangle& triangleA, const Triangle& triangleB
       for (const Edge& edgeB : edgesB) {
           if (edgeA == edgeB) {
             return true;
-            /* count++; */
           }
       }
   }
 
-  /* if (count == 1) { */
-  /*   return true; */
-  /* } */
-  return false; // 共有する辺はない
+  return false;
 }
 
 Circle get_circumscribed_circle(const Triangle& triangle) {
@@ -302,7 +285,6 @@ Point get_opposite_point(const Edge& edge, const Triangle& triangle) {
 
 void legalize_edge(
   const Edge& checked_edge,
-  /* const std::vector<Triangle>& triangles, */
   std::vector<Triangle>& primitive_triangles,
   const Point& added_point
 ) {
@@ -329,29 +311,20 @@ void legalize_edge(
     return;
   }
 
-  /// added_pointを含んでいる方は最初のinitialiのやつでいい
   Triangle new_triangle1 = primitive_triangles[adjcents_indexs[0]];
   Triangle new_triangle2 = primitive_triangles[adjcents_indexs[1]];
-  /* added_pointを含んでいる方を取得 */
 
   Triangle base_triangle = new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
   Triangle another_triangle = !new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
 
-  //  check illigal
   Point unshared_point = get_opposite_point(checked_edge, another_triangle);
-  //  flip
-  // 
+
   new_triangle1 = Triangle(added_point, unshared_point, checked_edge.start);
   new_triangle2 = Triangle(added_point, unshared_point, checked_edge.end);
-  // adjcents_indexs
 
   primitive_triangles[adjcents_indexs[0]] = new_triangle1;
   primitive_triangles[adjcents_indexs[1]] = new_triangle2;
 
-  // 違反点があったらflipした三角形を再作成
-    // flip
-    // 違反点を含んでいる三角形を取得
-    // 違反している三角形を取得
   Edge checked_edge1 = get_opposite_edge(added_point, new_triangle1);
   Edge checked_edge2 = get_opposite_edge(added_point, new_triangle2);
 
