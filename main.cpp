@@ -448,11 +448,11 @@ int main() {
     }
 
   std::vector<Triangle> display_triangles = {};
-  for (int i = 0; i <= primitive_triangles.size(); ++i) {
+  for (int i = 0; i < primitive_triangles.size(); ++i) {
     /* display_triangles.push_back(primitive_triangles[i]); */
   }
 
-  for (int i = 0; i <= primitive_triangles.size(); ++i) {
+  for (int i = 0; i < primitive_triangles.size(); ++i) {
     if (
       !(primitive_triangles[i].hasPoint(outermost_triangle.a) || 
         primitive_triangles[i].hasPoint(outermost_triangle.b) ||
