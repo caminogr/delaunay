@@ -348,10 +348,10 @@ Point wrap_position(Point& point) {
   float xv = point.x;
   float yv = point.y;
   if (point.x < -1 || 1 < point.x) {
-    xv = std::modff((point.x + 1.0f)/2.0f, &xv) * 2.0f - 1.0f;
+    xv = abs(point.x - (int)point.x) * 2.0f - 1.0f;;
   }
   if (point.y < -1 || 1 < point.y) {
-    yv = std::modff((point.y + 1.0f)/2.0f, &yv) * 2.0f - 1.0f;
+    yv = abs(point.y - (int)point.y) * 2.0f - 1.0f;
   }
   point.x = xv;
   point.y = yv;
