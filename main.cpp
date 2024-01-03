@@ -131,6 +131,11 @@ bool is_same_sign(float a, float b, float c) {
   return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
 }
 
+bool is_near_zero(float value) {
+  return std::fabs(value) < EPSILON;
+}
+
+
 bool is_point_in_triangle(
   const Point& point,
   const Triangle& triangle
@@ -147,6 +152,13 @@ bool is_point_in_triangle(
       {triangle.b.x - triangle.c.x, triangle.b.y - triangle.c.y},
       {point.x - triangle.c.x, point.y - triangle.c.y}
   );
+
+   // TODO: 辺上にある場合の処理をupdate
+   // errorを避けるためひとまずtrueを返すようにする
+   if (is_near_zero(cross1) || is_near_zero(cross2) || is_near_zero(cross3)) {
+        return true;
+    }
+
   return is_same_sign(cross1, cross2, cross3);
 }
 
@@ -161,7 +173,6 @@ bool is_triangle_in_circle(
 
   return ad <= (circle.radius + EPSILON) && bd <= (circle.radius + EPSILON) && cd <= (circle.radius + EPSILON);
 }
-
 
 
 /* 追加する点を含んでいるの三角形を取得 */
