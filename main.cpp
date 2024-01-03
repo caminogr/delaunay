@@ -410,8 +410,8 @@ int main() {
 
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      float noise_x = SimplexNoise::noise(i + 10, elapsedTime * 0.001);
-      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 10), elapsedTime * 0.001);
+      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
+      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
       /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
       point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
       point = wrap_position(point);
