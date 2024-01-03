@@ -9,6 +9,7 @@
 #include "SimplexNoise.h"
 
 const double EPSILON = 1e-5;
+const int POINTS_NUM = 20;
 
 struct Point {
   float x, y;
@@ -173,7 +174,7 @@ Triangle get_triangle_include_point(
       return triangles[i];
     }
   }
-  /* throw std::runtime_error("not found triangle including point"); */
+  throw std::runtime_error("not found triangle including point");
 }
 
 
@@ -332,6 +333,20 @@ void legalize_edge(
   legalize_edge(checked_edge2, primitive_triangles, added_point);
 }
 
+Point wrap_position(Point& point) {
+  float xv = point.x;
+  float yv = point.y;
+  if (point.x < -1 || 1 < point.x) {
+    xv = std::modff((point.x + 1.0f)/2.0f, &xv) * 2.0f - 1.0f;
+  }
+  if (point.y < -1 || 1 < point.y) {
+    yv = std::modff((point.y + 1.0f)/2.0f, &yv) * 2.0f - 1.0f;
+  }
+  point.x = xv;
+  point.y = yv;
+  return point;
+}
+
 int main() {
   auto startTime = std::chrono::high_resolution_clock::now();
   // Initialize GLFW
@@ -366,7 +381,7 @@ int main() {
   srand(static_cast<unsigned int>(time(nullptr)));
   std::vector<Point> ori_points;
 
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < POINTS_NUM; ++i) {
     float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
     float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
     std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
@@ -384,9 +399,11 @@ int main() {
 
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      float noise_x = SimplexNoise::noise(i, elapsedTime * 0.0001 * i/10);
-      float noise_y = SimplexNoise::noise(point.x * point.y * i, elapsedTime * 0.0001 * i/10);
-      point = Point(point.x + noise_x * 0.1, point.y + noise_y * 0.1);
+      float noise_x = SimplexNoise::noise(i + 10, elapsedTime * 0.001);
+      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 10), elapsedTime * 0.001);
+      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
+      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
+      point = wrap_position(point);
 
       points.push_back(point);
     }
