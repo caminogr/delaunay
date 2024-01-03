@@ -437,13 +437,15 @@ int main() {
       std::vector<Triangle> new_triangles = {triangle1, triangle2, triangle3};
 
       // 分割された三角形はprimitive_trianglesから除去
-      int divided_triangle_index;
+      int divided_triangle_index = -1;
       for (int j = 0; j < primitive_triangles.size(); j++) {
         if (primitive_triangles[j] == outer_triangle) {
           divided_triangle_index = j;
           break;
         }
-        divided_triangle_index = -1;
+      }
+      if (divided_triangle_index == -1) {
+        throw std::runtime_error("not found divided triangle");
       }
 
       primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
