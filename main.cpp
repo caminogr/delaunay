@@ -427,13 +427,25 @@ int main() {
   srand(static_cast<unsigned int>(time(nullptr)));
   std::vector<Point> ori_points;
 
-  for (int i = 0; i < POINTS_NUM; ++i) {
-    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-    std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
-    ori_points.push_back({ x, y });
-  }
+  /* for (int i = 0; i < POINTS_NUM; ++i) { */
+  /*   float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
+  /*   float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
+  /*   std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl; */
+  /*   ori_points.push_back({ x, y }); */
+  /* } */
 
+  ori_points.push_back({ 0.522831, -0.465082 });
+  ori_points.push_back({ 0.645575, 0.0153603 });
+  ori_points.push_back({ 0.229579, 0.834053 });
+  ori_points.push_back({ 0.849649, 0.717569 });
+  ori_points.push_back({ -0.853973, -0.306798 });
+  ori_points.push_back({ -0.432616, 0.759463 });
+  // おかしくなる
+  ori_points.push_back({ -0.927312, -0.49239 });
+
+  /* ori_points.push_back({ 0.788159, -0.080331 }); */
+  /* ori_points.push_back({ -0.160059, -0.795532 }); */
+  /* ori_points.push_back({ -0.767417, 0.673059 }); */
 
   glPointSize(8.0f);
   Triangle outermost_triangle = get_triangle_including_window();
