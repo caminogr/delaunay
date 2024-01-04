@@ -38,6 +38,21 @@ struct Edge {
 
   Edge(const Point& startPoint, const Point& endPoint) : start(startPoint), end(endPoint) {}
 
+  bool passThrough(const Point& point) const {
+    float cross = (end.x - start.x) * (point.y - start.y) - (end.y - start.y) * (point.x - start.x);
+    // crossが0でなければ辺上にはない
+    if (std::fabs(cross) > EPSILON) {
+        return false;
+    }
+
+    // 点と辺の端点間の距離のチェック
+    float dStartToPoint = std::sqrt((start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y));
+    float dEndToPoint = std::sqrt((end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y));
+    float dStartToEnd = std::sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y));
+
+    return std::fabs(dStartToPoint + dEndToPoint - dStartToEnd) < EPSILON; // 点が辺上にあるかどうか
+  }
+
   bool operator==(const Edge& other) const {
     return (start == other.start && end == other.end) || (start == other.end && end == other.start);
   }
@@ -153,10 +168,8 @@ bool is_point_in_triangle(
       {point.x - triangle.c.x, point.y - triangle.c.y}
   );
 
-   // TODO: 辺上にある場合の処理をupdate
-   // errorを避けるためひとまずtrueを返すようにする
    if (is_near_zero(cross1) || is_near_zero(cross2) || is_near_zero(cross3)) {
-      return false;
+      return true;
     }
 
   return is_same_sign(cross1, cross2, cross3);
@@ -174,18 +187,40 @@ bool is_triangle_in_circle(
   return ad <= (circle.radius + EPSILON) && bd <= (circle.radius + EPSILON) && cd <= (circle.radius + EPSILON);
 }
 
+/* 特定の点を含んでいる辺を取得 */
+Edge get_edge_include_point(
+  const Point& point,
+  const Triangle& triangle
+) {
+  Edge edges[] = {
+    triangle.getEdgeAB(),
+    triangle.getEdgeBC(),
+    triangle.getEdgeCA(),
+  };
 
-/* 追加する点を含んでいるの三角形を取得 */
-Triangle get_triangle_include_point(
+  for (const Edge& edge : edges) {
+    if (edge.passThrough(point)) {
+      return edge;
+    }
+  }
+  throw std::runtime_error("not found edge including point");
+}
+
+/* 特定の点を含んでいるの三角形を取得 */
+std::vector<Triangle> get_triangle_include_point(
   const Point& point,
   const std::vector<Triangle>& triangles
 ) {
+  std::vector<Triangle> triangles_include_point = {};
   for (const Triangle& triangle : triangles) {
     if (is_point_in_triangle(point, triangle)) {
-      return triangle;
+      triangles_include_point.push_back(triangle);
     }
   }
-  throw std::runtime_error("not found triangle including point");
+  if (triangles_include_point.size() == 0) {
+    throw std::runtime_error("not found triangle including point");
+  }
+  return triangles_include_point;
 }
 
 
@@ -399,22 +434,6 @@ int main() {
     ori_points.push_back({ x, y });
   }
 
-  ori_points.push_back({ 0.442374, 0.184246 });
-  ori_points.push_back({ 0.262616, 0.621856 });
-  ori_points.push_back({ -0.644497, 0.206253 });
-  ori_points.push_back({ 0.671082, -0.377077 });
-
-  // errorが発生するpoint
-  /* ori_points.push_back({ 0.224237, 0.94434 }); */
-
-
-  /* ori_points.push_back({ -0.727762, -0.245989 }); */
-  /* ori_points.push_back({ -0.130483, -0.463142 }); */
-  /* ori_points.push_back({ -0.941973, 0.296487 }); */
-  /* ori_points.push_back({ -0.020055, -0.0737527 }); */
-  /* ori_points.push_back({ 0.559138, 0.355843 }); */
-
-
 
   glPointSize(8.0f);
   Triangle outermost_triangle = get_triangle_including_window();
@@ -427,11 +446,11 @@ int main() {
     std::cout << "=========" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      /* float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001); */
-      /* float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001); */
-      /* /1* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); *1/ */
-      /* point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2); */
-      /* point = wrap_position(point); */
+      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
+      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
+      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
+      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
+      point = wrap_position(point);
 
       std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
@@ -440,40 +459,67 @@ int main() {
 
     std::vector<Triangle> primitive_triangles = {outermost_triangle};
 
-    for (const Point& point : points) {
-      auto outer_triangle = get_triangle_include_point(point, primitive_triangles);
+    for (int i = 0; i < ori_points.size(); ++i) {
+      auto outer_triangles = get_triangle_include_point(points.at(i), primitive_triangles);
 
-      Edge edge1 = Edge(outer_triangle.a, point);
-      Edge edge2 = Edge(outer_triangle.b, point);
-      Edge edge3 = Edge(outer_triangle.c, point);
+      std::vector<Triangle> new_triangles = {};
+      // 追加された点が既存の三角形の辺上にある場合
+      if (outer_triangles.size() == 2) {
+        for (const Triangle& outer_triangle : outer_triangles) {
+          Edge bounding_edge = get_edge_include_point(points.at(i), outer_triangle);
+          Point opposite_point = get_opposite_point(bounding_edge, outer_triangle);
+          std::cout << "bounding_edge: " << bounding_edge << std::endl;
+          std::cout << "opposite_point: " << opposite_point << std::endl;
 
-      Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start);
-      Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start);
-      Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start);
+          debugPoints.push_back(opposite_point);
 
-      std::vector<Triangle> new_triangles = {triangle1, triangle2, triangle3};
-
-      // 分割された三角形はprimitive_trianglesから除去
-      int divided_triangle_index = -1;
-      for (int j = 0; j < primitive_triangles.size(); j++) {
-        if (primitive_triangles[j] == outer_triangle) {
-          divided_triangle_index = j;
-          break;
+          Edge new_edge = Edge(opposite_point, points.at(i));
+          Triangle triangle1 = Triangle(new_edge.start, new_edge.end, bounding_edge.start);
+          Triangle triangle2 = Triangle(new_edge.start, new_edge.end, bounding_edge.end);
+          new_triangles.push_back(triangle1);
+          new_triangles.push_back(triangle2);
         }
-      }
-      if (divided_triangle_index == -1) {
-        throw std::runtime_error("not found divided triangle");
-      }
+      } else {
+        // 追加された点が既存の三角形の辺上にない場合
+        auto outer_triangle = outer_triangles.at(0);
+        Edge edge1 = Edge(outer_triangle.a, points.at(i));
+        Edge edge2 = Edge(outer_triangle.b, points.at(i));
+        Edge edge3 = Edge(outer_triangle.c, points.at(i));
 
-      primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
+        Triangle triangle1 = Triangle(edge1.start, edge1.end, edge2.start);
+        Triangle triangle2 = Triangle(edge2.start, edge2.end, edge3.start);
+        Triangle triangle3 = Triangle(edge3.start, edge3.end, edge1.start);
 
-      primitive_triangles.push_back(triangle1);
-      primitive_triangles.push_back(triangle2);
-      primitive_triangles.push_back(triangle3);
+        new_triangles.push_back(triangle1);
+        new_triangles.push_back(triangle2);
+        new_triangles.push_back(triangle3);
+      }
+      
+
+      for (const Triangle& outer_triangle : outer_triangles) {
+        // 分割された三角形はprimitive_trianglesから除去
+        int divided_triangle_index = -1;
+        for (int j = 0; j < primitive_triangles.size(); j++) {
+          if (primitive_triangles[j] == outer_triangle) {
+            divided_triangle_index = j;
+            break;
+          }
+        }
+        if (divided_triangle_index == -1) {
+          throw std::runtime_error("not found divided triangle");
+        }
+        primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
+      }
 
       for (const Triangle& triangle : new_triangles) {
-        Edge checked_edge = get_opposite_edge(point, triangle);
-        legalize_edge(checked_edge, primitive_triangles, point);
+        primitive_triangles.push_back(triangle);
+
+      }
+
+
+      for (const Triangle& triangle : new_triangles) {
+        Edge checked_edge = get_opposite_edge(points.at(i), triangle);
+        legalize_edge(checked_edge, primitive_triangles, points.at(i));
       }
     }
 
@@ -502,6 +548,7 @@ int main() {
     }
     glEnd();
 
+
     // Draw edges
 /*         glBegin(GL_LINES); */
 /*           for (const Edge& edge : edges) { */
@@ -520,27 +567,26 @@ int main() {
       glEnd();
     }
 
-    /* glBegin(GL_POINTS); */
-    /* glColor3f(0.0, 0.0, 0.5); */
-    /* for (const auto& point : debugPoints) { */
-    /*   glVertex2f(point.x, point.y); */
-    /* } */
-    /* glColor3f(1.,1.,1.); */
-    /* glEnd(); */
+    glBegin(GL_POINTS);
+    glColor3f(0.0, 0.0, 1.0);
+    for (const auto& point : debugPoints) {
+      glVertex2f(point.x, point.y);
+    }
+    glColor3f(1.,1.,1.);
+    glEnd();
 
-    /* glBegin(GL_TRIANGLES); */
-    /* /1* glColor3f(0.5,0,0); *1/ */
-    /* /1* for (const auto& triangle : debugTriangles) { *1/ */
-    /* for (const auto& triangle : display_triangles) { */
-  /* //radnom color */
-    /*   glColor3f((float)rand()/RAND_MAX, (float)rand()/RAND_MAX, (float)rand()/RAND_MAX); */
+    glBegin(GL_TRIANGLES);
+    /* glColor3f(0.5,0,0); */
+    for (const auto& triangle : debugTriangles) {
+  //radnom color
+      glColor3f((float)rand()/RAND_MAX, (float)rand()/RAND_MAX, (float)rand()/RAND_MAX);
   
-    /*   glVertex2f(triangle.a.x, triangle.a.y); */
-    /*   glVertex2f(triangle.b.x, triangle.b.y); */
-    /*   glVertex2f(triangle.c.x, triangle.c.y); */
-    /* } */
-    /* glColor3f(1.,1.,1.); */
-    /* glEnd(); */
+      glVertex2f(triangle.a.x, triangle.a.y);
+      glVertex2f(triangle.b.x, triangle.b.y);
+      glVertex2f(triangle.c.x, triangle.c.y);
+    }
+    glColor3f(1.,1.,1.);
+    glEnd();
 
 
 /*         glBegin(GL_LINES); */
