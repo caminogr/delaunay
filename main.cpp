@@ -437,18 +437,31 @@ int main() {
   /*   ori_points.push_back({ x, y }); */
   /* } */
 
-  ori_points.push_back({ 0.522831, -0.465082 });
-  ori_points.push_back({ 0.645575, 0.0153603 });
-  ori_points.push_back({ 0.229579, 0.834053 });
-  ori_points.push_back({ 0.849649, 0.717569 });
-  ori_points.push_back({ -0.853973, -0.306798 });
-  ori_points.push_back({ -0.432616, 0.759463 });
-  // おかしくなる
-  ori_points.push_back({ -0.927312, -0.49239 });
+/*   {x, y}: {0.685948, -0.247942} */
+/* {x, y}: {-0.509265, -0.790713} */
+/* {x, y}: {-0.603897, -0.0185628} */
+/* {x, y}: {-0.0755093, -0.0568302} */
+/* {x, y}: {0.478163, 0.813251} */
+/* {x, y}: {-0.845291, 0.151035} */
+/* {x, y}: {0.539462, 0.0694113} */
+/* {x, y}: {0.381242, 0.502405} */
+/* {x, y}: {-0.075986, 0.0878346} */
+/* {x, y}: {0.855167, -0.490298} */
 
-  /* ori_points.push_back({ 0.788159, -0.080331 }); */
-  /* ori_points.push_back({ -0.160059, -0.795532 }); */
-  /* ori_points.push_back({ -0.767417, 0.673059 }); */
+  ori_points.push_back({ 0.685948, -0.247942 });
+  ori_points.push_back({ -0.509265, -0.790713 });
+  ori_points.push_back({ -0.603897, -0.0185628 });
+  ori_points.push_back({ -0.0755093, -0.0568302 });
+  ori_points.push_back({ 0.478163, 0.813251 });
+
+  ori_points.push_back({ -0.845291, 0.151035 });
+  debugPoints.push_back({ -0.845291, 0.151035 });
+
+  /* ori_points.push_back({ 0.539462, 0.0694113 }); */
+  /* ori_points.push_back({ 0.381242, 0.502405 }); */
+  /* ori_points.push_back({ -0.075986, 0.0878346 }); */
+  /* ori_points.push_back({ 0.855167, -0.490298 }); */
+
 
   glPointSize(8.0f);
   Triangle outermost_triangle = get_triangle_including_window();
@@ -461,11 +474,11 @@ int main() {
     std::cout << "=========" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
-      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
-      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
-      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
-      point = wrap_position(point);
+      /* float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001); */
+      /* float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001); */
+      /* /1* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); *1/ */
+      /* point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2); */
+      /* point = wrap_position(point); */
 
       std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
@@ -476,6 +489,7 @@ int main() {
 
     for (int i = 0; i < ori_points.size(); ++i) {
       auto outer_triangles = get_triangle_include_point(points.at(i), primitive_triangles);
+      std::cout << "outer_triangles.size(): " << outer_triangles.size() << std::endl;
 
       std::vector<Triangle> new_triangles = {};
       // 追加された点が既存の三角形の辺上にある場合
@@ -537,7 +551,7 @@ int main() {
 
   std::vector<Triangle> display_triangles = {};
   for (const Triangle& primitive_triangle : primitive_triangles) {
-    /* display_triangles.push_back(primitive_triangle); */
+    display_triangles.push_back(primitive_triangle);
   }
 
   for (const Triangle& primitive_triangle : primitive_triangles) {
@@ -546,7 +560,7 @@ int main() {
         primitive_triangle.hasPoint(outermost_triangle.b) ||
         primitive_triangle.hasPoint(outermost_triangle.c))
     ) {
-      display_triangles.push_back(primitive_triangle);
+      /* display_triangles.push_back(primitive_triangle); */
       debugCircles.push_back(get_circumscribed_circle(primitive_triangle));
     }
   }
@@ -580,7 +594,7 @@ int main() {
     }
 
     glBegin(GL_POINTS);
-    glColor3f(0.0, 0.0, 1.0);
+    glColor3f(1.0, 0.0, 0.0);
     for (const auto& point : debugPoints) {
       glVertex2f(point.x, point.y);
     }
