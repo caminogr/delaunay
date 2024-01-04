@@ -9,7 +9,7 @@
 #include "SimplexNoise.h"
 
 const double EPSILON = 1e-5;
-const int POINTS_NUM = 60;
+const int POINTS_NUM = 10;
 
 struct Point {
   float x, y;
@@ -156,7 +156,7 @@ bool is_point_in_triangle(
    // TODO: 辺上にある場合の処理をupdate
    // errorを避けるためひとまずtrueを返すようにする
    if (is_near_zero(cross1) || is_near_zero(cross2) || is_near_zero(cross3)) {
-        return true;
+      return false;
     }
 
   return is_same_sign(cross1, cross2, cross3);
@@ -399,6 +399,22 @@ int main() {
     ori_points.push_back({ x, y });
   }
 
+  ori_points.push_back({ 0.442374, 0.184246 });
+  ori_points.push_back({ 0.262616, 0.621856 });
+  ori_points.push_back({ -0.644497, 0.206253 });
+  ori_points.push_back({ 0.671082, -0.377077 });
+
+  // errorが発生するpoint
+  /* ori_points.push_back({ 0.224237, 0.94434 }); */
+
+
+  /* ori_points.push_back({ -0.727762, -0.245989 }); */
+  /* ori_points.push_back({ -0.130483, -0.463142 }); */
+  /* ori_points.push_back({ -0.941973, 0.296487 }); */
+  /* ori_points.push_back({ -0.020055, -0.0737527 }); */
+  /* ori_points.push_back({ 0.559138, 0.355843 }); */
+
+
 
   glPointSize(8.0f);
   Triangle outermost_triangle = get_triangle_including_window();
@@ -408,13 +424,16 @@ int main() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
+    std::cout << "=========" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
-      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
-      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
-      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
-      point = wrap_position(point);
+      /* float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001); */
+      /* float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001); */
+      /* /1* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); *1/ */
+      /* point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2); */
+      /* point = wrap_position(point); */
+
+      std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
       points.push_back(point);
     }
