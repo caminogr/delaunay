@@ -146,15 +146,22 @@ bool is_same_sign(float a, float b, float c) {
   return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
 }
 
-bool is_near_zero(float value) {
-  return std::fabs(value) < EPSILON;
-}
-
 
 bool is_point_in_triangle(
   const Point& point,
   const Triangle& triangle
 ) {
+  Edge edges[] = {
+    triangle.getEdgeAB(),
+    triangle.getEdgeBC(),
+    triangle.getEdgeCA(),
+  };
+  for (const Edge& edge : edges) {
+    if (edge.passThrough(point)) {
+      return true;
+    }
+  }
+
   float cross1 = cross_product(
       {triangle.a.x - triangle.b.x, triangle.a.y - triangle.b.y},
       {point.x - triangle.b.x, point.y - triangle.b.y}
@@ -167,10 +174,6 @@ bool is_point_in_triangle(
       {triangle.b.x - triangle.c.x, triangle.b.y - triangle.c.y},
       {point.x - triangle.c.x, point.y - triangle.c.y}
   );
-
-   if (is_near_zero(cross1) || is_near_zero(cross2) || is_near_zero(cross3)) {
-      return true;
-    }
 
   return is_same_sign(cross1, cross2, cross3);
 }
@@ -480,8 +483,6 @@ int main() {
         for (const Triangle& outer_triangle : outer_triangles) {
           Edge bounding_edge = get_edge_include_point(points.at(i), outer_triangle);
           Point opposite_point = get_opposite_point(bounding_edge, outer_triangle);
-          std::cout << "bounding_edge: " << bounding_edge << std::endl;
-          std::cout << "opposite_point: " << opposite_point << std::endl;
 
           debugPoints.push_back(opposite_point);
 
@@ -525,7 +526,6 @@ int main() {
 
       for (const Triangle& triangle : new_triangles) {
         primitive_triangles.push_back(triangle);
-
       }
 
 
