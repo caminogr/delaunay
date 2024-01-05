@@ -9,7 +9,7 @@
 #include "SimplexNoise.h"
 
 const double EPSILON = 1e-5;
-const int POINTS_NUM = 10;
+const int POINTS_NUM = 40;
 
 struct Point {
   float x, y;
@@ -351,6 +351,11 @@ void legalize_edge(
   /* loopCount += 1; */
   /* std::cout << "loopCount: " << loopCount << std::endl; */
 
+  /* std::cout << "======= primitive_triangles.size()" << primitive_triangles.size() << std::endl; */
+  /* for (int i = 0; i < primitive_triangles.size(); ++i) { */
+  /*   std::cout << "primitive_triangles[i]: " << primitive_triangles[i] << std::endl; */
+  /* } */
+
   Triangle target_triangle = Triangle(added_point, checked_edge.start, checked_edge.end);
 
   std::vector<int> required_flip_adjucents = get_adjcent_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles, checked_edge);
@@ -369,7 +374,6 @@ void legalize_edge(
     }
   }
 
-  std::cout << "adjcents_indexs.size(): " << adjcents_indexs.size() << std::endl;
   if (adjcents_indexs.size() != 2) {
     throw std::runtime_error("adjcents triangles with certain edge must be 2");
   }
@@ -444,37 +448,12 @@ int main() {
   srand(static_cast<unsigned int>(time(nullptr)));
   std::vector<Point> ori_points;
 
-  /* for (int i = 0; i < POINTS_NUM; ++i) { */
-  /*   float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
-  /*   float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1; */
-  /*   std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl; */
-  /*   ori_points.push_back({ x, y }); */
-  /* } */
-
-/*   {x, y}: {0.685948, -0.247942} */
-/* {x, y}: {-0.509265, -0.790713} */
-/* {x, y}: {-0.603897, -0.0185628} */
-/* {x, y}: {-0.0755093, -0.0568302} */
-/* {x, y}: {0.478163, 0.813251} */
-/* {x, y}: {-0.845291, 0.151035} */
-/* {x, y}: {0.539462, 0.0694113} */
-/* {x, y}: {0.381242, 0.502405} */
-/* {x, y}: {-0.075986, 0.0878346} */
-/* {x, y}: {0.855167, -0.490298} */
-
-  ori_points.push_back({ 0.685948, -0.247942 });
-  ori_points.push_back({ -0.509265, -0.790713 });
-  ori_points.push_back({ -0.603897, -0.0185628 });
-  ori_points.push_back({ -0.0755093, -0.0568302 });
-  ori_points.push_back({ 0.478163, 0.813251 });
-
-  ori_points.push_back({ -0.845291, 0.151035 });
-  debugPoints.push_back({ -0.845291, 0.151035 });
-
-  /* ori_points.push_back({ 0.539462, 0.0694113 }); */
-  /* ori_points.push_back({ 0.381242, 0.502405 }); */
-  /* ori_points.push_back({ -0.075986, 0.0878346 }); */
-  /* ori_points.push_back({ 0.855167, -0.490298 }); */
+  for (int i = 0; i < POINTS_NUM; ++i) {
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
+    std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
+    ori_points.push_back({ x, y });
+  }
 
 
   glPointSize(8.0f);
@@ -487,14 +466,13 @@ int main() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
-    std::cout << "=========" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      /* float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001); */
-      /* float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001); */
-      /* /1* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); *1/ */
-      /* point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2); */
-      /* point = wrap_position(point); */
+      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
+      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
+      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
+      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
+      point = wrap_position(point);
 
       std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
@@ -505,7 +483,6 @@ int main() {
 
     for (int i = 0; i < ori_points.size(); ++i) {
       auto outer_triangles = get_triangle_include_point(points.at(i), primitive_triangles);
-      std::cout << "outer_triangles.size(): " << outer_triangles.size() << std::endl;
 
       std::vector<Triangle> new_triangles = {};
       // 追加された点が既存の三角形の辺上にある場合
@@ -513,8 +490,6 @@ int main() {
         for (const Triangle& outer_triangle : outer_triangles) {
           Edge bounding_edge = get_edge_include_point(points.at(i), outer_triangle);
           Point opposite_point = get_opposite_point(bounding_edge, outer_triangle);
-
-          debugPoints.push_back(opposite_point);
 
           Edge new_edge = Edge(opposite_point, points.at(i));
           Triangle triangle1 = Triangle(new_edge.start, new_edge.end, bounding_edge.start);
@@ -569,7 +544,7 @@ int main() {
 
   std::vector<Triangle> display_triangles = {};
   for (const Triangle& primitive_triangle : primitive_triangles) {
-    display_triangles.push_back(primitive_triangle);
+    /* display_triangles.push_back(primitive_triangle); */
   }
 
   for (const Triangle& primitive_triangle : primitive_triangles) {
@@ -578,8 +553,8 @@ int main() {
         primitive_triangle.hasPoint(outermost_triangle.b) ||
         primitive_triangle.hasPoint(outermost_triangle.c))
     ) {
-      /* display_triangles.push_back(primitive_triangle); */
-      debugCircles.push_back(get_circumscribed_circle(primitive_triangle));
+      display_triangles.push_back(primitive_triangle);
+      /* debugCircles.push_back(get_circumscribed_circle(primitive_triangle)); */
     }
   }
 
