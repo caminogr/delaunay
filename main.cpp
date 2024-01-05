@@ -105,6 +105,9 @@ std::vector<Edge> debugEdges = {};
 std::vector<Triangle> debugTriangles = {};
 std::vector<Circle> debugCircles = {};
 
+std::vector<int> debugNums = {};
+/* auto loopCount = 0; */
+
 float cross_product(const Point& A, const Point& B) {
   return A.x * B.y - A.y * B.x;
 }
@@ -279,14 +282,34 @@ Circle get_circumscribed_circle(const Triangle& triangle) {
   return Circle({cx, cy}, r);
 }
 
-std::vector<int> get_adjcent_tringles_inner_circumscribed_circle(const Triangle& triangle, const std::vector<Triangle>& triangles) {
+bool has_edge(const Triangle& triangle, const Edge& edge) {
+  Edge edges[] = {
+    triangle.getEdgeAB(),
+    triangle.getEdgeBC(),
+    triangle.getEdgeCA(),
+  };
+
+  for (const Edge& e : edges) {
+    if (e == edge) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+std::vector<int> get_adjcent_tringles_inner_circumscribed_circle(const Triangle& triangle, const std::vector<Triangle>& triangles, const Edge& check_edge) {
   Circle circumscribed_circle = get_circumscribed_circle(triangle);
   
   std::vector<int> should_remove_list = {};
   for (int i = 0; i < triangles.size(); i++) {
     if (
       is_triangle_in_circle(triangles[i], circumscribed_circle) &&
-      are_triangles_adjacent(triangle, triangles[i])
+
+      are_triangles_adjacent(triangle, triangles[i]) &&
+      // check対象のedgeではない => edgeをすでにFlipしている三角形だった場合には除外する
+      has_edge(triangles[i], check_edge)
     ) {
       should_remove_list.push_back(i);
     }
@@ -305,22 +328,6 @@ Edge get_opposite_edge(const Point& point, const Triangle& triangle) {
 }
 
 
-bool has_edge(const Triangle& triangle, const Edge& edge) {
-  Edge edges[] = {
-    triangle.getEdgeAB(),
-    triangle.getEdgeBC(),
-    triangle.getEdgeCA(),
-  };
-
-  for (const Edge& e : edges) {
-    if (e == edge) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 Point get_opposite_point(const Edge& edge, const Triangle& triangle) {
   if ((triangle.a.x != edge.start.x || triangle.a.y != edge.start.y) &&
       (triangle.a.x != edge.end.x || triangle.a.y != edge.end.y)) {
@@ -338,15 +345,20 @@ void legalize_edge(
   std::vector<Triangle>& primitive_triangles,
   const Point& added_point
 ) {
+  /* if (loopCount >= 29) { */
+  /*   return; */
+  /* } */
+  /* loopCount += 1; */
+  /* std::cout << "loopCount: " << loopCount << std::endl; */
 
   Triangle target_triangle = Triangle(added_point, checked_edge.start, checked_edge.end);
-  std::vector<int> required_flip_adjucents = get_adjcent_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles);
 
+  std::vector<int> required_flip_adjucents = get_adjcent_tringles_inner_circumscribed_circle(target_triangle, primitive_triangles, checked_edge);
   if (required_flip_adjucents.size() == 0) {
     return;
   }
   if (required_flip_adjucents.size() > 1) {
-    /* throw std::runtime_error("flip triangle is not unique"); */
+    throw std::runtime_error("flip triangle is not unique");
   }
 
   std::vector<int> adjcents_indexs = {};
@@ -357,13 +369,15 @@ void legalize_edge(
     }
   }
 
-  if (adjcents_indexs.size() < 2) {
-    return;
+  std::cout << "adjcents_indexs.size(): " << adjcents_indexs.size() << std::endl;
+  if (adjcents_indexs.size() != 2) {
+    throw std::runtime_error("adjcents triangles with certain edge must be 2");
   }
 
   Triangle new_triangle1 = primitive_triangles[adjcents_indexs[0]];
   Triangle new_triangle2 = primitive_triangles[adjcents_indexs[1]];
 
+  // edgeをflip
   Triangle base_triangle = new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
   Triangle another_triangle = !new_triangle1.hasPoint(added_point) ? new_triangle1 : new_triangle2;
 
@@ -467,6 +481,8 @@ int main() {
   Triangle outermost_triangle = get_triangle_including_window();
 
   while (!glfwWindowShouldClose(window)) {
+    /* loopCount = 0; */
+
     std::vector<Point> points;
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
@@ -525,17 +541,19 @@ int main() {
 
       for (const Triangle& outer_triangle : outer_triangles) {
         // 分割された三角形はprimitive_trianglesから除去
-        int divided_triangle_index = -1;
+        std::vector<int> should_remove_list = {};
         for (int j = 0; j < primitive_triangles.size(); j++) {
           if (primitive_triangles[j] == outer_triangle) {
-            divided_triangle_index = j;
-            break;
+            should_remove_list.push_back(j);
           }
         }
-        if (divided_triangle_index == -1) {
+        if (should_remove_list.size() == 0) {
           throw std::runtime_error("not found divided triangle");
         }
-        primitive_triangles.erase(primitive_triangles.begin() + divided_triangle_index);
+        if (should_remove_list.size() > 1) {
+          throw std::runtime_error("target triangle is more than 1");
+        }
+        primitive_triangles.erase(primitive_triangles.begin() + should_remove_list.at(0));
       }
 
       for (const Triangle& triangle : new_triangles) {
@@ -615,23 +633,23 @@ int main() {
     glEnd();
 
 
-/*         glBegin(GL_LINES); */
-/*           glColor3f(0.0,0.5,0); */
-/*           for (const Edge& edge : debugEdges) { */
-/*             glVertex2f(edge.start.x, edge.start.y); */
-/*             glVertex2f(edge.end.x, edge.end.y); */
-/*           } */
-/*         glColor3f(1.,1.,1.); */
-/*         glEnd(); */
+        glBegin(GL_LINES);
+          glColor3f(1.0,0.0,0);
+          for (const Edge& edge : debugEdges) {
+            glVertex2f(edge.start.x, edge.start.y);
+            glVertex2f(edge.end.x, edge.end.y);
+          }
+        glColor3f(1.,1.,1.);
+        glEnd();
 
-    /* glBegin(GL_LINE_LOOP); */
-    /*   for (const Circle& circle : debugCircles) { */
-    /*     for (int i = 0; i <= 360; i++) { */
-    /*       float degInRad = i * M_PI / 180; */
-    /*       glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius); */
-    /*     } */
-    /*   } */
-    /* glEnd(); */
+    glBegin(GL_LINE_LOOP);
+      for (const Circle& circle : debugCircles) {
+        for (int i = 0; i <= 360; i++) {
+          float degInRad = i * M_PI / 180;
+          glVertex2f(circle.center.x + cos(degInRad) * circle.radius, circle.center.y + sin(degInRad) * circle.radius);
+        }
+      }
+    glEnd();
 
 
     // Swap front and back buffers
