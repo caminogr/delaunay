@@ -456,7 +456,8 @@ int main() {
   }
 
 
-  glPointSize(8.0f);
+  glPointSize(12.0f);
+  glLineWidth(3.0f);
   Triangle outermost_triangle = get_triangle_including_window();
 
   while (!glfwWindowShouldClose(window)) {
