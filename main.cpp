@@ -7,98 +7,9 @@
 #include <chrono>
 
 #include "SimplexNoise.h"
-
-const int POINTS_NUM = 40;
-const double EPSILON = 1e-4;
-
-struct Point {
-  float x, y;
-
-  Point(float x, float y) : x(x), y(y) {}
-
-  bool operator<(const Point& other) const {
-    if (x == other.x) {
-        return y < other.y;
-    }
-    return x < other.x;
-  }
-
-  bool operator==(const Point& other) const {
-    return x == other.x && y == other.y;
-  }
-};
-
-std::ostream& operator<<(std::ostream& os, const Point& point) {
-  os << "(" << point.x << ", " << point.y << ")";
-  return os;
-}
-
-struct Edge {
-  Point start, end;
-
-  Edge(const Point& startPoint, const Point& endPoint) : start(startPoint), end(endPoint) {}
-
-  bool passThrough(const Point& point) const {
-    float cross = (end.x - start.x) * (point.y - start.y) - (end.y - start.y) * (point.x - start.x);
-    // crossが0でなければ辺上にはない
-    if (std::fabs(cross) > EPSILON) {
-        return false;
-    }
-
-    // 点と辺の端点間の距離のチェック
-    float dStartToPoint = std::sqrt((start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y));
-    float dEndToPoint = std::sqrt((end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y));
-    float dStartToEnd = std::sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y));
-
-    return std::fabs(dStartToPoint + dEndToPoint - dStartToEnd) < EPSILON; // 点が辺上にあるかどうか
-  }
-
-  bool operator==(const Edge& other) const {
-    return (start == other.start && end == other.end) || (start == other.end && end == other.start);
-  }
-};
-std::ostream& operator<<(std::ostream& os, const Edge& edge) {
-  os << "start: " << edge.start << ", end: " << edge.end << "]";
-  return os;
-}
-
-struct Triangle {
-  Point a, b, c;
-
-  Triangle(const Point& pointA, const Point& pointB, const Point& pointC) : a(pointA), b(pointB), c(pointC) {}
-
-  Edge getEdgeAB() const {
-    return Edge(a, b);
-  }
-
-  Edge getEdgeBC() const {
-   return Edge(b, c);
-  }
-
-  Edge getEdgeCA() const {
-    return Edge(c, a);
-  }
-
-  bool hasPoint(const Point& point) const {
-    return a == point || b == point || c == point;
-  }
-
-  bool operator==(const Triangle& other) const {
-    return hasPoint(other.a) && hasPoint(other.b) && hasPoint(other.c);
-  }
-
-};
-std::ostream& operator<<(std::ostream& os, const Triangle& triangle) {
-  os << "[" << triangle.a << ", " << triangle.b << ", " << triangle.c << "]";
-  return os;
-}
-
-struct Circle {
-  Point center;
-  float radius;
-
-  Circle(const Point& center, float radius) : center(center), radius(radius) {}
-};
+#include "Geometry.h"
+#include "PointsGenerator.h"
+#include "RandomPointGenerator.h"
 
 std::vector<Point> debugPoints = {};
 std::vector<Edge> debugEdges = {};
@@ -446,15 +357,10 @@ int main() {
 
   // Seed for random number generation
   srand(static_cast<unsigned int>(time(nullptr)));
-  std::vector<Point> ori_points;
 
-  for (int i = 0; i < POINTS_NUM; ++i) {
-    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 - 1;
-    std::cout << "{x, y}: " << "{" << x << ", " << y << "}" << std::endl;
-    ori_points.push_back({ x, y });
-  }
-
+  std::shared_ptr<IPointGenerator> randomGen = std::make_shared<RandomPointGenerator>();
+  PointsGenerator generator(randomGen);
+  std::vector<Point> ori_points = generator.generate();
 
   glPointSize(12.0f);
   glLineWidth(3.0f);
@@ -467,14 +373,19 @@ int main() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
+    std::cout << "============" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
-      float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.0001);
-      float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.0001);
-      /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
-      point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
-      point = wrap_position(point);
+      /* if (ori_points.size() < 40) { */
+        point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001);
+        float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.00005) * 4;
+        float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.00005) * 4;
+        /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
+        point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
+      /* }  else { */
 
+      /* } */
+      point = wrap_position(point);
       std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
       points.push_back(point);
