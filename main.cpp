@@ -10,6 +10,7 @@
 #include "Geometry.h"
 #include "PointsGenerator.h"
 #include "RandomPointGenerator.h"
+#include "FaceRecognitionPointGenerator.h"
 
 std::vector<Point> debugPoints = {};
 std::vector<Edge> debugEdges = {};
@@ -358,7 +359,7 @@ int main() {
   // Seed for random number generation
   srand(static_cast<unsigned int>(time(nullptr)));
 
-  std::shared_ptr<IPointGenerator> randomGen = std::make_shared<RandomPointGenerator>();
+  std::shared_ptr<IPointGenerator> randomGen = std::make_shared<FaceRecognitionPointGenerator>();
   PointsGenerator generator(randomGen);
   std::vector<Point> ori_points = generator.generate();
 
@@ -373,20 +374,20 @@ int main() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
 
-    std::cout << "============" << std::endl;
+    //std::cout << "============" << std::endl;
     for (int i = 0; i < ori_points.size(); ++i) {
       Point point = ori_points.at(i);
       /* if (ori_points.size() < 40) { */
-        point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001);
-        float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.00005) * 4;
-        float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.00005) * 4;
         /* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); */
-        point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2);
+        /* float noise_x = SimplexNoise::noise(i + 1, elapsedTime * 0.00005) * 4; */
+        /* float noise_y = SimplexNoise::noise(point.x * point.y * (i + 1), elapsedTime * 0.00005) * 4; */
+        /* /1* point = Point(point.x + elapsedTime * 0.001, point.y + elapsedTime * 0.001); *1/ */
+        /* point = Point(point.x + noise_x * 0.2, point.y + noise_y * 0.2); */
       /* }  else { */
 
       /* } */
       point = wrap_position(point);
-      std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
+      //std::cout << "{x, y}: " << "{" << point.x << ", " << point.y << "}" << std::endl;
 
       points.push_back(point);
     }
