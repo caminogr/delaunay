@@ -2,6 +2,7 @@
 #define GEOMETRY_H
 
 #include <iostream>
+#include <cmath>
 
 const double EPSILON = 1e-4;
 
